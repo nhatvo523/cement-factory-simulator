@@ -34,7 +34,13 @@ Các kịch bản dùng chung `configs/operating_profiles/zone1_operation.json` 
 
 Z02 mô phỏng tuyến SL-301 → KF-301 → PH-301 → PC-301 → KL-301 → CL-301 → SL-302. CF-301 hút khí qua tháp tiền gia nhiệt. Lực hút thấp giới hạn hoặc ngừng cấp liệu. Mô hình hạch toán nước bay hơi và CO₂ tách từ bột liệu, đồng thời ước tính nhiệt giàn nguội thu hồi cho lò. Nhiệt lò truyền tới PH-301 theo tải lò của bước trước. PH-301 cấp một phần nhiệt sấy cho RM-201 tùy tải nhiệt và lực hút. Nguồn nhiệt dự phòng có thể cấp tới 65% năng lực sấy danh định. Đây là mô hình nhiệt rút gọn với hệ số quy ước.
 
-Cấu hình `cement_dispatch` phân bổ clinker từ SL-302 giữa hai mill theo công suất và sức chứa từng ngăn SL-401. Mỗi mill bổ sung vật liệu phối trộn theo hệ số cấu hình và có dòng hồi lưu riêng. Đóng bao và xuất rời rút xi măng theo mác từ tồn đầu bước. Khi một nhánh xuất dừng, ngăn tương ứng tích lũy, rồi giới hạn mill và có thể làm clinker dồn về SL-302. Các nhánh dùng nhu cầu t/h cấu hình. Mô hình này mô phỏng dòng liên tục, tồn kho và lỗi chặn tuyến.
+Zone 3–4 khai báo thiết bị, cổng và kết nối trong `configs/plants/bulk_material_line.json`. Model thiết bị và lỗi component dùng chung cơ chế nạp cấu hình, chèn lỗi và lấy mẫu cảm biến của Zone 1–2.
+
+- Zone 3. SL-302 chia clinker theo nhu cầu hai tuyến. Bộ định lượng bổ sung riêng thạch cao và phụ gia theo công thức từng mác. Bột mịn đi vào ngăn tương ứng của SL-401. Hạt thô quay về mill và chiếm năng lực nghiền. Lưu lượng khí, năng lực mill, tải separator và chỗ trống trong silo giới hạn lượng cấp.
+- Zone 4. Đóng bao và xuất rời rút từ tồn đầu bước của từng ngăn. Thiết bị có năng lực thấp nhất giới hạn lưu lượng của tuyến. Xe rời đạt tải đặt thì ngừng cấp và chờ đổi xe. Khi một nhánh ngừng, ngăn tương ứng đầy dần, rồi giới hạn mill và có thể làm clinker dồn về SL-302.
+- Mác A/B và tỷ lệ phối liệu là cấu hình giả định. Mô hình giải hồi lưu trong một bước và quy đổi lưu lượng thành số bao mỗi phút. Độ mịn thực nghiệm, chất lượng bao và quá trình vận chuyển từng bao cần mô hình riêng.
+
+Trình tự công nghệ tham khảo [EPA AP-42, mục 11.6 Portland Cement Manufacturing](https://www.epa.gov/sites/default/files/2020-10/documents/c11s06.pdf).
 
 ## Phạm vi mô hình
 
@@ -42,4 +48,4 @@ Tuyến mẫu `bulk_material_line.json` dùng bước tính 60 s và thông số
 
 Để dùng lại model cho dự án khác, tạo cấu hình plant với ID, thông số và kết nối riêng, rồi truyền `--plant` khi chạy. `model_type` tham chiếu đến khai báo dùng chung trong `configs/model_types/`. Mục `target` trong kịch bản dùng ID của thiết bị trong plant đã chọn.
 
-Các dòng được phân bổ theo tồn kho đầu bước, rồi cam kết đồng thời. Sấy bảo toàn chất rắn khô và hạch toán hơi nước. Phân ly dùng tỷ lệ hạt mịn và vòng hồi lưu cục bộ trong mỗi bước. Kết quả lưu giá trị vật lý và số đo giả lập. Các vòng PID đầy đủ, thời gian lưu trong lò, động học cháy, CO₂ từ nhiên liệu và chu kỳ từng xe nằm ngoài phạm vi mô hình hiện tại.
+Các dòng được phân bổ theo tồn kho đầu bước, rồi cam kết đồng thời. Sấy bảo toàn chất rắn khô và hạch toán hơi nước. Phân ly dùng tỷ lệ hạt mịn và vòng hồi lưu cục bộ trong mỗi bước. Kết quả lưu giá trị vật lý và số đo giả lập. Các vòng PID đầy đủ, thời gian lưu trong lò, động học cháy, và CO₂ từ nhiên liệu nằm ngoài phạm vi mô hình hiện tại.

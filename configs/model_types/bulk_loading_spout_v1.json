@@ -1,0 +1,22 @@
+{
+  "id": "bulk_loading_spout_v1",
+  "implementation": "throughput",
+  "component_model": "bulk_spout",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 0,
+      "runtime": true,
+      "unit": "t/h"
+    }
+  }
+}

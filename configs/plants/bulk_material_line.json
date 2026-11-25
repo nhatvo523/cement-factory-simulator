@@ -183,7 +183,23 @@
       "id": "clinker_silo",
       "model_type": "feed_bin_v1",
       "parameters": {"capacity_t": 450, "initial_t": 75, "initial_moisture_fraction": 0, "outlet_capacity_tph": 90}
-    }
+    },
+    {"id": "WF-401A", "model_type": "belt_weigh_feeder_v1", "parameters": {"capacity_tph": 36, "belt_speed_m_s": 0.65}},
+    {"id": "CM-401A", "model_type": "closed_circuit_finish_mill_v1", "parameters": {"capacity_tph": 68, "motor_current_a": 165, "reference_airflow_m3_s": 55}},
+    {"id": "SP-401A", "model_type": "rotor_separator_v1", "parameters": {"capacity_tph": 68, "fines_fraction": 0.58, "rotor_speed_rpm": 880}},
+    {"id": "FN-401A", "model_type": "monitored_process_fan_v1", "parameters": {"airflow_m3_s": 55, "fan_speed_rpm": 980, "bearing_temperature_c": 52, "bearing_trip_c": 85}},
+    {"id": "WF-401B", "model_type": "belt_weigh_feeder_v1", "parameters": {"capacity_tph": 35, "belt_speed_m_s": 0.65}},
+    {"id": "CM-401B", "model_type": "closed_circuit_finish_mill_v1", "parameters": {"capacity_tph": 68, "motor_current_a": 165, "reference_airflow_m3_s": 53}},
+    {"id": "SP-401B", "model_type": "rotor_separator_v1", "parameters": {"capacity_tph": 68, "fines_fraction": 0.56, "rotor_speed_rpm": 880}},
+    {"id": "FN-401B", "model_type": "monitored_process_fan_v1", "parameters": {"airflow_m3_s": 53, "fan_speed_rpm": 980, "bearing_temperature_c": 52, "bearing_trip_c": 85}},
+    {"id": "SL-401", "model_type": "compartment_silo_v1", "parameters": {}},
+    {"id": "FD-501", "model_type": "belt_weigh_feeder_v1", "parameters": {"capacity_tph": 34, "belt_speed_m_s": 0.4}},
+    {"id": "FD-502", "model_type": "belt_weigh_feeder_v1", "parameters": {"capacity_tph": 33, "belt_speed_m_s": 0.4}},
+    {"id": "PK-501", "model_type": "rotary_bag_packer_v1", "parameters": {"capacity_tph": 38, "bag_mass_kg": 50}},
+    {"id": "BC-501", "model_type": "bag_conveyor_v1", "parameters": {"capacity_tph": 40, "belt_speed_m_s": 0.75}},
+    {"id": "LD-501", "model_type": "truck_bag_loader_v1", "parameters": {"capacity_tph": 38, "motor_current_a": 24}},
+    {"id": "SP-502", "model_type": "bulk_loading_spout_v1", "parameters": {"capacity_tph": 37}},
+    {"id": "WS-502", "model_type": "truck_scale_v1", "parameters": {"capacity_tph": 37, "truck_target_t": 28, "exchange_s": 120}}
   ],
   "connections": [
     {
@@ -249,26 +265,45 @@
       "from": "process_fan.air_out",
       "to": "drying_mill.air_in",
       "kind": "gas"
-    }
+    },
+    {"from": "clinker_silo.outlet", "to": "WF-401A.inlet", "kind": "material"},
+    {"from": "WF-401A.outlet", "to": "CM-401A.inlet", "kind": "material"},
+    {"from": "CM-401A.outlet", "to": "SP-401A.inlet", "kind": "material"},
+    {"from": "SP-401A.outlet", "to": "SL-401.inlet_a", "kind": "material"},
+    {"from": "SP-401A.coarse_out", "to": "CM-401A.recycle_in", "kind": "recycle"},
+    {"from": "FN-401A.air_out", "to": "CM-401A.air_in", "kind": "gas"},
+    {"from": "clinker_silo.outlet", "to": "WF-401B.inlet", "kind": "material"},
+    {"from": "WF-401B.outlet", "to": "CM-401B.inlet", "kind": "material"},
+    {"from": "CM-401B.outlet", "to": "SP-401B.inlet", "kind": "material"},
+    {"from": "SP-401B.outlet", "to": "SL-401.inlet_b", "kind": "material"},
+    {"from": "SP-401B.coarse_out", "to": "CM-401B.recycle_in", "kind": "recycle"},
+    {"from": "FN-401B.air_out", "to": "CM-401B.air_in", "kind": "gas"},
+    {"from": "SL-401.outlet_a", "to": "FD-501.inlet", "kind": "material"},
+    {"from": "FD-501.outlet", "to": "PK-501.inlet", "kind": "material"},
+    {"from": "PK-501.outlet", "to": "BC-501.inlet", "kind": "material"},
+    {"from": "BC-501.outlet", "to": "LD-501.inlet", "kind": "material"},
+    {"from": "SL-401.outlet_b", "to": "FD-502.inlet", "kind": "material"},
+    {"from": "FD-502.outlet", "to": "SP-502.inlet", "kind": "material"},
+    {"from": "SP-502.outlet", "to": "WS-502.inlet", "kind": "material"}
   ],
   "cement_dispatch": {
     "clinker_source": "clinker_silo",
     "silo": "SL-401",
-    "grades": {
-      "A": {"capacity_t": 90, "initial_t": 25},
-      "B": {"capacity_t": 90, "initial_t": 25}
-    },
-    "mills": [
-      {"grade": "A", "capacity_tph": 36, "additive_per_clinker": 0.065, "fines_fraction": 0.58,
-       "airflow_m3_s": 55, "equipment": {"feeder": "WF-401A", "mill": "CM-401A", "separator": "SP-401A", "fan": "FN-401A"}},
-      {"grade": "B", "capacity_tph": 35, "additive_per_clinker": 0.09, "fines_fraction": 0.56,
-       "airflow_m3_s": 53, "equipment": {"feeder": "WF-401B", "mill": "CM-401B", "separator": "SP-401B", "fan": "FN-401B"}}
-    ],
-    "dispatch": [
-      {"grade": "A", "demand_tph": 34, "bag_mass_kg": 50,
-       "equipment": {"feeder": "FD-501", "packer": "PK-501", "conveyor": "BC-501", "loader": "LD-501"}},
-      {"grade": "B", "demand_tph": 33,
-       "equipment": {"feeder": "FD-502", "spout": "SP-502", "scale": "WS-502"}}
-    ]
+    "compartments": {
+      "a": {
+        "grade": "A",
+        "capacity_t": 90,
+        "initial_t": 25,
+        "gypsum_per_clinker": 0.045,
+        "additive_per_clinker": 0.02
+      },
+      "b": {
+        "grade": "B",
+        "capacity_t": 90,
+        "initial_t": 25,
+        "gypsum_per_clinker": 0.045,
+        "additive_per_clinker": 0.045
+      }
+    }
   }
 }

@@ -1,0 +1,26 @@
+{
+  "id": "bag_conveyor_v1",
+  "implementation": "throughput",
+  "component_model": "bag_conveyor",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 0,
+      "runtime": true,
+      "unit": "t/h"
+    },
+    "belt_speed_m_s": {
+      "min": 0.01,
+      "unit": "m/s"
+    }
+  }
+}

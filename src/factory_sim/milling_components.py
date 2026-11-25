@@ -80,7 +80,8 @@ class AirSeparator(BulkComponents):
 
 
 class RawMillFan(BulkComponents):
-    FAULTS = {"impeller": {"degradation"}, "damper": {"stuck_low"}, "fan_bearing": {"overheating"}}
+    FAULTS = {"fan_drive": {"trip"}, "impeller": {"degradation"}, "damper": {"stuck_low"},
+              "fan_bearing": {"overheating"}}
 
     def __init__(self, parameters):
         super().__init__(parameters)
@@ -96,7 +97,11 @@ class RawMillFan(BulkComponents):
         target = 25 if self.trip else parameters["bearing_temperature_c"] + 60 * heating
         self.temperature += (target - self.temperature) * (1 - exp(-elapsed / 100))
         self.last_time_s = time_s
-        self.trip = self.trip or self.temperature >= parameters["bearing_trip_c"]
+        if not self.trip:
+            if self.severity("fan_drive", "trip"):
+                self.trip = "fan_drive_trip"
+            elif self.temperature >= parameters["bearing_trip_c"]:
+                self.trip = "fan_bearing_overtemperature"
         self.running = not self.trip and parameters["airflow_m3_s"] > 0
         self.damper_fraction = 1 - self.severity("damper", "stuck_low")
         impeller_fraction = 1 - self.severity("impeller", "degradation")
@@ -109,7 +114,7 @@ class RawMillFan(BulkComponents):
             "fan_drive": {"speed_rpm": self.parameters["fan_speed_rpm"] if self.running else 0},
             "damper": {"opening_fraction": self.damper_fraction},
             "fan_bearing": {"temperature_c": self.temperature},
-        }, "fan_bearing_overtemperature" if self.trip else None)
+        }, self.trip or None)
 
 
 MILLING_COMPONENT_MODELS = {

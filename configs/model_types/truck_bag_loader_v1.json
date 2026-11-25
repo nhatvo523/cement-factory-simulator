@@ -1,0 +1,26 @@
+{
+  "id": "truck_bag_loader_v1",
+  "implementation": "throughput",
+  "component_model": "finish_drive",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 0,
+      "runtime": true,
+      "unit": "t/h"
+    },
+    "motor_current_a": {
+      "min": 0.001,
+      "unit": "A"
+    }
+  }
+}

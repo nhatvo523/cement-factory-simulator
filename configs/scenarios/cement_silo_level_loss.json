@@ -1,0 +1,12 @@
+{
+  "id": "cement_silo_level_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "SL-401.level_sensor.signal_loss",
+      "value": 1
+    }
+  ]
+}

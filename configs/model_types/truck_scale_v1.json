@@ -1,0 +1,30 @@
+{
+  "id": "truck_scale_v1",
+  "implementation": "throughput",
+  "component_model": "truck_scale",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 0,
+      "runtime": true,
+      "unit": "t/h"
+    },
+    "truck_target_t": {
+      "min": 0.001,
+      "unit": "t"
+    },
+    "exchange_s": {
+      "min": 0.001,
+      "unit": "s"
+    }
+  }
+}

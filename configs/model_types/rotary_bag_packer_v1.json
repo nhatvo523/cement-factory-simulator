@@ -1,0 +1,26 @@
+{
+  "id": "rotary_bag_packer_v1",
+  "implementation": "throughput",
+  "component_model": "bag_packer",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 0,
+      "runtime": true,
+      "unit": "t/h"
+    },
+    "bag_mass_kg": {
+      "min": 0.001,
+      "unit": "kg"
+    }
+  }
+}

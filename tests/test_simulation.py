@@ -360,6 +360,45 @@ class SimulationTest(unittest.TestCase):
         self.assertEqual(frames[-1]["equipment"]["PK-501"]["outlet_tph"], 0)
         self.assertGreater(frames[-1]["equipment"]["SP-502"]["outlet_tph"], 0)
 
+    def test_finish_mill_recycle_and_fan_fault_follow_connected_branch(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        frame = handler.operation({"fault": ["cement_fan_a_trip@600"]})["frames"][10]
+        state = frame["equipment"]
+        self.assertEqual(state["FN-401A"]["trip_reason"], "fan_drive_trip")
+        self.assertEqual(state["SP-401A"]["outlet_tph"], 0)
+        self.assertGreater(state["SP-401B"]["outlet_tph"], 0)
+        feeder, mill, separator = (state[key] for key in ("WF-401B", "CM-401B", "SP-401B"))
+        self.assertAlmostEqual(feeder["outlet_tph"],
+                               feeder["clinker_tph"] + feeder["gypsum_tph"] + feeder["additive_tph"])
+        self.assertAlmostEqual(mill["outlet_tph"], separator["inlet_tph"])
+        self.assertAlmostEqual(separator["inlet_tph"], separator["outlet_tph"] + separator["recycle_tph"])
+        self.assertIn("vibration_mm_s", frame["measurements"]["CM-401B"]["components"]["bearing"])
+
+    def test_truck_exchange_stops_bulk_loading_at_target(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        frames = handler.operation({})["frames"]
+        for previous, frame in zip(frames, frames[1:]):
+            scale = frame["equipment"]["WS-502"]
+            self.assertLessEqual(scale["truck_net_t"], 28 + 1e-9)
+            if scale.get("waiting_reason") == "truck_exchange":
+                self.assertAlmostEqual(previous["equipment"]["WS-502"]["truck_net_t"], 28)
+                self.assertEqual(frame["equipment"]["SP-502"]["outlet_tph"], 0)
+                self.assertGreater(frame["equipment"]["PK-501"]["outlet_tph"], 0)
+                break
+        else:
+            self.fail("Bulk loading never paused to exchange trucks")
+
+    def test_stacked_dispatch_faults_separate_bad_readings_from_physical_state(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        frame = handler.operation({"fault": ["cement_silo_level_loss@600",
+                                             "truck_scale_signal_loss@600"]})["frames"][10]
+        self.assertIsNone(frame["measurements"]["SL-401"]["inventory_t"])
+        self.assertIsNone(frame["measurements"]["SL-401"]["grades"])
+        self.assertGreater(frame["equipment"]["SL-401"]["inventory_t"], 0)
+        self.assertEqual(frame["equipment"]["SP-502"]["outlet_tph"], 0)
+        self.assertIsNone(frame["measurements"]["WS-502"]["truck_net_t"])
+        self.assertGreater(frame["equipment"]["PK-501"]["outlet_tph"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

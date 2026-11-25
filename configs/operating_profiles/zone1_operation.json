@@ -13,6 +13,12 @@
     }
   },
   "parameter_variation": {
+    "WF-401A": {"capacity_tph": {"relative_amplitude": 0.008, "period_s": 257}},
+    "WF-401B": {"capacity_tph": {"relative_amplitude": 0.008, "period_s": 263}},
+    "FN-401A": {"airflow_m3_s": {"relative_amplitude": 0.008, "period_s": 271}},
+    "FN-401B": {"airflow_m3_s": {"relative_amplitude": 0.008, "period_s": 283}},
+    "FD-501": {"capacity_tph": {"relative_amplitude": 0.008, "period_s": 293}},
+    "FD-502": {"capacity_tph": {"relative_amplitude": 0.008, "period_s": 307}},
     "crusher": {
       "capacity_tph": {
         "relative_amplitude": 0.015,
@@ -55,6 +61,23 @@
     }
   },
   "measurements": {
+    "WF-401A": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "gypsum_tph": {"relative_amplitude": 0.008, "period_s": 205}, "additive_tph": {"relative_amplitude": 0.008, "period_s": 205}, "clinker_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "CM-401A": {"fresh_inlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "recycle_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "SP-401A": {"inlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "recycle_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "FN-401A": {"airflow_m3_s": {"relative_amplitude": 0.008, "period_s": 205}},
+    "WF-401B": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "gypsum_tph": {"relative_amplitude": 0.008, "period_s": 205}, "additive_tph": {"relative_amplitude": 0.008, "period_s": 205}, "clinker_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "CM-401B": {"fresh_inlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "recycle_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "SP-401B": {"inlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "recycle_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "FN-401B": {"airflow_m3_s": {"relative_amplitude": 0.008, "period_s": 205}},
+    "SL-401": {"inventory_t": {"relative_amplitude": 0.008, "period_s": 205}, "level_fraction": {"relative_amplitude": 0.008, "period_s": 205}, "inlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "FD-501": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "FD-502": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "PK-501": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}, "bags_per_min": {"relative_amplitude": 0.008, "period_s": 205}},
+    "BC-501": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "LD-501": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "SP-502": {"outlet_tph": {"relative_amplitude": 0.008, "period_s": 205}},
+    "WS-502": {"dispatch_flow_tph": {"relative_amplitude": 0.008, "period_s": 205}, "truck_net_t": {"relative_amplitude": 0.008, "period_s": 205}},
+
     "crusher": {
       "inlet_tph": {
         "relative_amplitude": 0.009,

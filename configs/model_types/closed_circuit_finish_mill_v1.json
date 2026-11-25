@@ -1,0 +1,38 @@
+{
+  "id": "closed_circuit_finish_mill_v1",
+  "implementation": "throughput",
+  "component_model": "finish_drive",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ],
+    "recycle_in": [
+      "in",
+      "recycle"
+    ],
+    "air_in": [
+      "in",
+      "gas"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 0,
+      "runtime": true,
+      "unit": "t/h"
+    },
+    "motor_current_a": {
+      "min": 0.001,
+      "unit": "A"
+    },
+    "reference_airflow_m3_s": {
+      "min": 0.001,
+      "unit": "m³/s"
+    }
+  }
+}

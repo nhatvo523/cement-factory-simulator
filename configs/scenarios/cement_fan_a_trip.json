@@ -1,0 +1,12 @@
+{
+  "id": "cement_fan_a_trip",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "FN-401A.fan_drive.trip",
+      "value": 1
+    }
+  ]
+}

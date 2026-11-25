@@ -1,0 +1,12 @@
+{
+  "id": "bag_loader_stop",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "LD-501.drive.unavailable",
+      "value": 1
+    }
+  ]
+}

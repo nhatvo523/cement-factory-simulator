@@ -33,6 +33,11 @@ SCENARIOS = (
     "cooler_airflow_loss", "cooler_grate_jam", "kiln_id_fan_trip", "kiln_id_fan_derate",
     "clinker_silo_outlet_blockage", "clinker_silo_level_signal_loss",
     "cement_mill_a_trip", "cement_mill_b_trip", "bag_packer_jam", "bulk_loading_stop",
+    "cement_feeder_a_jam", "cement_feeder_b_jam", "cement_mill_a_wear",
+    "cement_mill_b_wear", "cement_separator_a_trip", "cement_separator_b_trip",
+    "cement_fan_a_trip", "cement_fan_b_trip", "cement_silo_gate_blockage",
+    "cement_silo_level_loss", "bag_feeder_jam", "bag_conveyor_trip",
+    "bag_loader_stop", "bulk_feeder_jam", "truck_scale_signal_loss",
 )
 CONFIGS = ROOT / "configs"
 PAGES = {

@@ -9,10 +9,11 @@ from factory_sim.bulk_components import BULK_COMPONENT_MODELS
 from factory_sim.milling_components import MILLING_COMPONENT_MODELS
 from factory_sim.kiln_components import KILN_COMPONENT_MODELS
 from factory_sim.crusher import FAULTS as CRUSHER_FAULTS
-from factory_sim.cement_dispatch import device_faults
+from factory_sim.finishing_components import FINISHING_COMPONENT_MODELS
+from factory_sim.cement_dispatch import CementDispatch
 
 
-COMPONENT_MODELS = {**BULK_COMPONENT_MODELS, **MILLING_COMPONENT_MODELS, **KILN_COMPONENT_MODELS}
+COMPONENT_MODELS = {**BULK_COMPONENT_MODELS, **MILLING_COMPONENT_MODELS, **KILN_COMPONENT_MODELS, **FINISHING_COMPONENT_MODELS}
 
 
 def read_json(path):
@@ -58,32 +59,18 @@ def load_plant(model_directory, path):
         source = dispatch["clinker_source"]
         if assets.get(source, {}).get("model", {}).get("implementation") != "storage":
             raise ValueError("Cement dispatch requires a clinker storage source")
-        for grade, settings in dispatch["grades"].items():
-            check_parameter(grade + ".initial_t", settings["initial_t"], {"max": settings["capacity_t"]})
-            check_parameter(grade + ".capacity_t", settings["capacity_t"], {"min": 0.001})
-        for line in dispatch["mills"]:
-            if line["grade"] not in dispatch["grades"] or set(line["equipment"]) != {"feeder", "mill", "separator", "fan"}:
-                raise ValueError("Invalid cement mill grade or equipment")
-            for name in ("capacity_tph", "additive_per_clinker", "airflow_m3_s"):
-                check_parameter(name, line[name], {})
-            check_parameter("fines_fraction", line["fines_fraction"], {"min": 0.001, "max": 1})
-        for line in dispatch["dispatch"]:
-            roles = set(line["equipment"])
-            if line["grade"] not in dispatch["grades"] or roles not in (
-                    {"feeder", "packer", "conveyor", "loader"}, {"feeder", "spout", "scale"}):
-                raise ValueError("Invalid cement dispatch grade or equipment")
-            check_parameter("demand_tph", line["demand_tph"], {})
-            if "packer" in roles:
-                check_parameter("bag_mass_kg", line["bag_mass_kg"], {"min": 0.001})
-        for key, catalog in device_faults(dispatch).items():
-            if key in assets:
-                raise ValueError(f"Duplicate equipment: {key}")
-            assets[key] = {"parameters": {}, "model": {"implementation": "dispatch_device", "parameters": {}, "ports": {}},
-                           "dispatch_faults": catalog}
+        if assets[dispatch["silo"]]["model"].get("component_model") != "silo_bank":
+            raise ValueError("Cement dispatch requires a compartment silo")
+        for compartment, settings in dispatch["compartments"].items():
+            check_parameter(compartment + ".capacity_t", settings["capacity_t"], {"min": 0.001})
+            check_parameter(compartment + ".initial_t", settings["initial_t"], {"max": settings["capacity_t"]})
+            for name in ("gypsum_per_clinker", "additive_per_clinker"):
+                check_parameter(compartment + "." + name, settings[name], {})
     used_ports = set()
     for connection in plant["connections"]:
         source, target = connection["from"], connection["to"]
-        if source in used_ports or target in used_ports:
+        shared_clinker = dispatch and source == dispatch["clinker_source"] + ".outlet"
+        if (source in used_ports and not shared_clinker) or target in used_ports:
             raise ValueError(f"Port already connected: {source} -> {target}")
         used_ports.update((source, target))
         source_id, source_port = source.split(".", 1)
@@ -92,6 +79,8 @@ def load_plant(model_directory, path):
         in_port = assets[target_id]["model"]["ports"][target_port]
         if out_port != ["out", connection["kind"]] or in_port != ["in", connection["kind"]]:
             raise ValueError(f"Incompatible ports: {source} -> {target}")
+    if dispatch:
+        CementDispatch(dispatch, plant["connections"], assets)
     return plant, assets
 
 
@@ -108,7 +97,7 @@ def load_scenario(path, assets):
             model = assets[key]["model"]
             runtime = COMPONENT_MODELS.get(model.get("component_model"))
             catalog = runtime.FAULTS if runtime else (
-                CRUSHER_FAULTS if model["implementation"] == "rotor_crusher" else assets[key].get("dispatch_faults", {}))
+                CRUSHER_FAULTS if model["implementation"] == "rotor_crusher" else {})
             if fault not in catalog.get(component, ()):
                 raise ValueError(f"Unknown component fault: {event['target']}")
             check_parameter(event["target"], event["value"], {"min": 0.01, "max": 1})

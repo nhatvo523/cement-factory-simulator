@@ -1,0 +1,24 @@
+{
+  "id": "compartment_silo_v1",
+  "implementation": "throughput",
+  "component_model": "silo_bank",
+  "ports": {
+    "inlet_a": [
+      "in",
+      "material"
+    ],
+    "outlet_a": [
+      "out",
+      "material"
+    ],
+    "inlet_b": [
+      "in",
+      "material"
+    ],
+    "outlet_b": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {}
+}

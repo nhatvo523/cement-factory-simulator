@@ -304,17 +304,17 @@ function factoryGraph() {
     nd('Z04-L02',814,474,198,89,'SP-502','Xi măng rời')
   ];
   const edges = [
-    ed('Z01-L01','Z01-L02','raw','Nguyên liệu đã chuẩn bị','M139 252V320',149,287),
+    ed('Z01-L01','Z01-L02','raw','Nguyên liệu\nđã chuẩn bị','M139 252V320',149,280),
     ed('Z01-L02','SL-301','meal','Bột liệu','M241 350H267V207H299',262,195),
     ed('SL-301','Z02-L01','meal','Cấp lò','M396 247V320',406,285),
     ed('Z02-L01','SL-302','clinker','Clinker nguội','M397 413V474',407,467),
     ed('SL-302','Z03-L01','clinker','','M499 507H524V205H555'),
-    ed('SL-302','Z03-L02','clinker','','M499 527H534V364H555'),
+    ed('SL-302','Z03-L02','clinker','Clinker nguội','M499 527H534V364H555',547,460),
     ed('Z03-L01','SL-401','cement','','M759 201H814'),
-    ed('Z03-L02','SL-401','cement','','M759 352H782V225H814'),
+    ed('Z03-L02','SL-401','cement','Xi măng bột','M759 352H782V225H814',794,288),
     ed('SL-401','Z04-L01','cement','Cấp đóng bao','M909 252V320',917,289),
     ed('SL-401','Z04-L02','cement','Cấp xuất rời','M1012 220H1033V516H1012',930,451),
-    ed('Z02-L01','Z01-L02','heat','Khí nóng khi khả dụng','M299 384H275V460H251V393H241',109,464)
+    ed('Z02-L01','Z01-L02','heat','Khí nóng khi khả dụng','M299 384H275V460H139V413',156,448)
   ];
   return graph(nodes,edges,1060,590);
 }
@@ -396,14 +396,20 @@ function processGraph(d) {
   const cout = {...nd('@out',804,153,232,128),label:d.output || 'Xem đặc tả'};
   const nodes=[cin,cout];
   const edges=[];
-  if (main.length) {
+  const finishGrinding = d.parent.startsWith('Z03') && d.id.endsWith('-P02') && main.length===2;
+  if (finishGrinding) {
+    const [mill,fan]=main;
+    nodes.push(nd(mill,425,158,210,118,mill),nd(fan,425,350,210,94,fan));
+    edges.push(ed('@in',mill,kind),ed(mill,'@out',kind,'Dòng vật liệu'),
+      ed(fan,mill,'gas','Hỗ trợ dòng khí'));
+  } else if (main.length) {
     const dx = 488/main.length;
     nodes.push(...main.map((id,i)=>nd(id,278+i*dx,158,Math.min(206,dx-12),118,id)));
     edges.push(ed('@in',main[0],kind));
     if (isRecycle) {
       edges.push(ed(main[0],'@out',kind));
       if (main.length>1) edges.push(ed(main[0],main[1],'recycle','Hạt thô hồi lưu',null,510,145));
-    } else if (d.id === 'Z01-L02-P02' || (d.parent.startsWith('Z03') && d.id.endsWith('P02')) || d.id === 'Z02-L01-P02') {
+    } else if (d.id === 'Z01-L02-P02' || d.id === 'Z02-L01-P02') {
       edges.push(ed(main[0],'@out',kind,'Dòng vật liệu','M484 198V132H778V198H804',643,120));
       if (main.length>1) edges.push(d.id==='Z02-L01-P02'
         ? ed(main[0],main[1],'gas','Khí thải',null,495,293)
@@ -437,7 +443,7 @@ function processGraph(d) {
     'SP-401A':['Xi măng sau nghiền','Tách phần hạt mịn','sorting'],
     'SP-401B':['Xi măng sau nghiền','Tách phần hạt mịn','sorting']
   }[plantUnit];
-  return {...graph(nodes,edges,1060,487),transformation};
+  return {...graph(nodes,edges,1060,487),transformation,...(finishGrinding?{portLead:26}:{})};
 }
 
 function equipmentGraph(d) {
@@ -453,7 +459,7 @@ function equipmentGraph(d) {
     nodes.push({...nd('@in',36,221,235,100),label:d.input},{...nd('@out',787,221,235,100),label:d.output});
     edges.push(ed('@in',d.id,'material'),ed(d.id,'@out','material'));
   }
-  return graph(nodes,edges,1060,488);
+  return {...graph(nodes,edges,1060,488),portLead:26};
 }
 function componentGraph(d) {
   const parent = record.get(d.parent);
@@ -509,6 +515,47 @@ function wrapped(text,max,limit) {
 function svgText(text,x,y,cls,max,limit) {
   return '<text x="'+x+'" y="'+y+'" class="'+cls+'">'+wrapped(text,max,limit).map((s,i)=>'<tspan x="'+x+'" dy="'+(i?17:0)+'">'+esc(s)+'</tspan>').join('')+'</text>';
 }
+const diagramFonts = {
+  'node-id':'600 12px Consolas, monospace',
+  'node-label':'600 15px system-ui',
+  'node-caption':'13px system-ui',
+  'edge-label':'600 12px system-ui',
+};
+const measureContext = typeof document==='undefined'?null:document.createElement('canvas').getContext('2d');
+function diagramTextWidth(text,cls) {
+  if (!measureContext) return [...text].length*(cls==='node-label'?9:8);
+  measureContext.font=diagramFonts[cls];
+  return measureContext.measureText(text).width+(cls==='node-id'?text.length*0.7:0);
+}
+function boundedText(text,x,y,cls,width,maxLines) {
+  const lines=[];
+  const fits=value=>diagramTextWidth(value,cls)<=width;
+  let line='';
+  for (let word of String(text || '').trim().split(/\s+/)) {
+    const joined=line?line+' '+word:word;
+    if (fits(joined)) {
+      line=joined;
+      continue;
+    }
+    if (line) lines.push(line);
+    line='';
+    while (word && !fits(word)) {
+      let end=word.length-1;
+      while (end>1 && !fits(word.slice(0,end))) end--;
+      lines.push(word.slice(0,end));
+      word=word.slice(end);
+    }
+    line=word;
+  }
+  if (line) lines.push(line);
+  if (lines.length>maxLines) {
+    let last=lines[maxLines-1];
+    while (last && !fits(last+'…')) last=last.slice(0,-1);
+    lines.splice(maxLines-1,lines.length,last.trimEnd()+'…');
+  }
+  return '<text x="'+x+'" y="'+y+'" class="'+cls+'">'+lines.map((part,i)=>
+    '<tspan x="'+x+'" dy="'+(i?17:0)+'">'+esc(part)+'</tspan>').join('')+'</text>';
+}
 function renderNode(n) {
   const d=record.get(n.id);
   const custom = !d;
@@ -518,42 +565,283 @@ function renderNode(n) {
   const compact = n.h < 150;
   const leading = n.icon && compact ? Math.min(63, n.w*.32) : 0;
   const textX = n.x+12+leading;
-  const chars = Math.floor((n.w-20-leading)/7.3);
+  const textWidth = n.w-24-leading;
+  const caption = n.caption && n.h>=86 && textWidth>0;
+  const labelLimit = Math.max(1,1+Math.floor((n.h-(caption?29:11)-43)/17));
   const tag = custom ? ({'@in':'ĐẦU VÀO','@out':'ĐẦU RA','@grinding':'NGHIỀN','@drying':'SẤY'}[n.id] || 'LAN TRUYỀN') : (d.type==='Process'?d.id.slice(-3):d.type==='Line'?d.id.slice(-3):d.type==='Component'?'COMPONENT':d.id);
   return '<g class="diagram-node '+status+'" style="--node-color:'+color+'" data-node="'+esc(n.id)+'" '+(custom?'':'data-go="'+esc(n.id)+'" tabindex="0" role="button" aria-label="'+esc(d.id+' '+d.name)+'"')+'>'+
     '<title>'+esc(n.label || d?.name || n.id)+'</title><rect class="node-bg" x="'+n.x+'" y="'+n.y+'" width="'+n.w+'" height="'+n.h+'" rx="8"/>'+
     '<path d="M'+n.x+' '+(n.y+11)+'v'+(n.h-22)+'" stroke="'+color+'" stroke-width="3"/>'+
     (n.icon ? machine(n.icon,n.x+(compact?5:65),n.y+(compact?Math.max(13,n.h/2-leading*.36):64),compact?leading:145) : '')+
-    svgText(tag,textX,n.y+21,'node-id',40,1)+
-    svgText(n.label || d?.name,textX,n.y+43,'node-label',chars,custom?4:(n.h<90?2:3))+
-    (n.caption && n.h>=86 && leading+18<n.w ? svgText(n.caption,textX,n.y+n.h-10,'node-caption',chars,1) : '')+
+    boundedText(tag,textX,n.y+21,'node-id',textWidth-8,1)+
+    boundedText(n.label || d?.name,textX,n.y+43,'node-label',textWidth,labelLimit)+
+    (caption ? boundedText(n.caption,textX,n.y+n.h-10,'node-caption',textWidth,1) : '')+
     ((!custom && (demoState.enabled || isAsset || ['Z01-L01','Z01-L02','Z02-L01'].includes(d.parent))) ? '<circle class="status-dot" cx="'+(n.x+n.w-10)+'" cy="'+(n.y+12)+'" r="3.4"/>' : '')+'</g>';
 }
-function defaultPath(a,b) {
-  const ay = a.y+a.h/2, by = b.y+b.h/2;
-  if (Math.abs(a.x-b.x)<50 && Math.abs(ay-by)>60) {
-    return 'M'+(a.x+a.w/2)+' '+(ay<by?a.y+a.h:a.y)+'V'+(ay<by?b.y:b.y+b.h);
+const routeClearance = 6;
+const sameCoordinate = (a,b) => Math.abs(a-b) < 1e-6;
+const between = (value,a,b) => value >= Math.min(a,b)-1e-6 && value <= Math.max(a,b)+1e-6;
+const segmentAxis = ([a,b]) => sameCoordinate(a[0],b[0]) ? 1 : 0;
+const routeSegments = points => points.slice(1).map((point,i)=>[points[i],point])
+  .filter(([a,b])=>!a.every((value,i)=>sameCoordinate(value,b[i])));
+
+function edgeWaypoints(path) {
+  const tokens = path.match(/[MHVhv]|-?(?:\d+(?:\.\d*)?|\.\d+)/g);
+  const points = [[Number(tokens[1]),Number(tokens[2])]];
+  for (let i=3;i<tokens.length;i+=2) {
+    const command=tokens[i], value=Number(tokens[i+1]);
+    const point=points.at(-1).slice();
+    const axis=command.toUpperCase()==='V'?1:0;
+    point[axis]=command===command.toUpperCase()?value:point[axis]+value;
+    points.push(point);
   }
-  const ax = a.x<b.x ? a.x+a.w : a.x;
-  const bx = a.x<b.x ? b.x : b.x+b.w;
-  return 'M'+ax+' '+ay+'H'+(ax+bx)/2+'V'+by+'H'+bx;
+  return points;
+}
+
+function touchesBlock(segment,n,pad=0) {
+  const [a,b]=segment, axis=segmentAxis(segment), cross=1-axis;
+  const low=[n.x-pad,n.y-pad], high=[n.x+n.w+pad,n.y+n.h+pad];
+  return a[cross]>low[cross]+1e-6 && a[cross]<high[cross]-1e-6 &&
+    Math.max(a[axis],b[axis])>low[axis]+1e-6 && Math.min(a[axis],b[axis])<high[axis]-1e-6;
+}
+
+function endPort([point,outside],n) {
+  if (sameCoordinate(point[1],outside[1]) && between(point[1],n.y+6,n.y+n.h-6)) {
+    return (sameCoordinate(point[0],n.x) && outside[0]<n.x) ||
+      (sameCoordinate(point[0],n.x+n.w) && outside[0]>n.x+n.w);
+  }
+  if (sameCoordinate(point[0],outside[0]) && between(point[0],n.x+6,n.x+n.w-6)) {
+    return (sameCoordinate(point[1],n.y) && outside[1]<n.y) ||
+      (sameCoordinate(point[1],n.y+n.h) && outside[1]>n.y+n.h);
+  }
+  return false;
+}
+
+function routeCost(segment,used) {
+  const [a,b]=segment, axis=segmentAxis(segment), cross=1-axis;
+  let crossings=0;
+  for (const other of used) {
+    const [p,q]=other;
+    if (segmentAxis(other)===axis) {
+      if (Math.abs(a[cross]-p[cross])<routeClearance-1e-6 &&
+          Math.min(Math.max(a[axis],b[axis]),Math.max(p[axis],q[axis])) >
+          Math.max(Math.min(a[axis],b[axis]),Math.min(p[axis],q[axis]))+1e-6) return Infinity;
+    } else if (between(p[axis],a[axis],b[axis]) && between(a[cross],p[cross],q[cross])) {
+      crossings++;
+    }
+  }
+  return Math.abs(a[axis]-b[axis])+crossings*120;
+}
+
+function blockPorts(n,other,lead) {
+  const ports=[];
+  for (const axis of [0,1]) {
+    const cross=1-axis, origin=[n.x,n.y], size=[n.w,n.h];
+    const targetCenter=[other.x+other.w/2,other.y+other.h/2];
+    const slots=[0.5,0.25,0.75,0.375,0.625].map(f=>origin[cross]+size[cross]*f);
+    const aligned=targetCenter[cross];
+    if (between(aligned,origin[cross]+12,origin[cross]+size[cross]-12)) slots.push(aligned);
+    for (const direction of [-1,1]) for (const slot of new Set(slots)) {
+      const point=[];
+      point[axis]=origin[axis]+(direction>0?size[axis]:0);
+      point[cross]=slot;
+      const stub=point.slice();
+      stub[axis]+=direction*lead;
+      ports.push({point,stub,axis});
+    }
+  }
+  return ports;
+}
+
+function orthogonalRoute(a,b,blocks,used,width,height,lead) {
+  const sources=blockPorts(a,b,lead), targets=blockPorts(b,a,lead);
+  const clearance=n=>n===a || n===b ? lead : routeClearance;
+  const xs=[8,width-8], ys=[8,height-8];
+  for (const n of blocks) {
+    const pad=clearance(n);
+    xs.push(n.x-pad,n.x+n.w+pad);
+    ys.push(n.y-pad,n.y+n.h+pad);
+  }
+  for (const {stub} of [...sources,...targets]) {
+    xs.push(stub[0]);
+    ys.push(stub[1]);
+  }
+  for (const [p,q] of used) {
+    if (sameCoordinate(p[0],q[0])) xs.push(p[0]-routeClearance,p[0]+routeClearance);
+    else ys.push(p[1]-routeClearance,p[1]+routeClearance);
+  }
+  const tracks=(values,limit)=>[...new Set(values.filter(n=>n>0 && n<limit))].sort((a,b)=>a-b);
+  const x=tracks(xs,width), y=tracks(ys,height);
+  const index=([px,py])=>y.indexOf(py)*x.length+x.indexOf(px);
+  const points=y.flatMap(py=>x.map(px=>[px,py]));
+  const queue=[], distance=new Map(), previous=new Map(), starts=new Map(), exits=new Map();
+  const neighbors=new Map();
+  let best=Infinity, finish;
+  const insert=(node,axis,cost,prior)=>{
+    const key=node*2+axis;
+    if (cost>=(distance.get(key) ?? Infinity)) return;
+    distance.set(key,cost);
+    previous.set(key,prior);
+    const p=points[node];
+    const estimate=cost+Math.abs(p[0]-Math.max(b.x,Math.min(b.x+b.w,p[0])))+
+      Math.abs(p[1]-Math.max(b.y,Math.min(b.y+b.h,p[1])));
+    let lo=0, hi=queue.length;
+    while (lo<hi) {
+      const mid=(lo+hi)>>1;
+      if (queue[mid].estimate>estimate) lo=mid+1;
+      else hi=mid;
+    }
+    queue.splice(lo,0,{key,cost,estimate});
+  };
+  const ports=(items,n)=>items.filter(({point,stub})=>
+    between(stub[0],1,width-1) && between(stub[1],1,height-1) &&
+    !blocks.some(block=>block!==n && touchesBlock([point,stub],block,routeClearance)) &&
+    Number.isFinite(routeCost([point,stub],used)));
+  const portCost=(port,n)=>routeCost([port.point,port.stub],used)+0.08*Math.max(
+    Math.abs(port.point[0]-n.x-n.w/2)*(port.axis===1),
+    Math.abs(port.point[1]-n.y-n.h/2)*(port.axis===0));
+  for (const port of ports(sources,a)) {
+    const node=index(port.stub);
+    insert(node,port.axis,portCost(port,a),null);
+    starts.set(node*2+port.axis,port.point);
+  }
+  for (const port of ports(targets,b)) exits.set(index(port.stub),port);
+  while (queue.length) {
+    const {key,cost,estimate}=queue.pop();
+    if (estimate>=best) break;
+    if (distance.get(key)!==cost) continue;
+    const node=key>>1, axis=key%2, point=points[node];
+    const exit=exits.get(node);
+    if (exit) {
+      const total=cost+portCost(exit,b)+(axis===exit.axis?0:16);
+      if (total<best) {
+        best=total;
+        finish={key,point:exit.point};
+      }
+    }
+    if (!neighbors.has(node)) {
+      const adjacent=[];
+      for (const [next,dir] of [[node%x.length?node-1:-1,0],[(node+1)%x.length?node+1:-1,0],
+        [node-x.length,1],[node+x.length,1]]) {
+        if (!points[next]) continue;
+        const segment=[point,points[next]];
+        if (blocks.some(block=>touchesBlock(segment,block,clearance(block)))) continue;
+        const cost=routeCost(segment,used);
+        if (Number.isFinite(cost)) adjacent.push({next,dir,cost});
+      }
+      neighbors.set(node,adjacent);
+    }
+    for (const next of neighbors.get(node)) insert(next.next,next.dir,cost+next.cost+(axis===next.dir?0:16),key);
+  }
+  if (!finish) return [];
+  const pointsBack=[finish.point];
+  for (let key=finish.key;key!==null;key=previous.get(key)) {
+    pointsBack.push(points[key>>1]);
+    if (previous.get(key)===null) pointsBack.push(starts.get(key));
+  }
+  const compact=[];
+  for (const point of pointsBack.reverse()) {
+    while (compact.length>1 && [0,1].some(axis=>
+      sameCoordinate(compact.at(-2)[axis],point[axis]) && sameCoordinate(compact.at(-1)[axis],point[axis]))) {
+      compact.pop();
+    }
+    compact.push(point);
+  }
+  return compact;
+}
+
+function diagramRoutes(diagram) {
+  const nodes=new Map(diagram.nodes.map(n=>[n.id,n]));
+  const blocks=diagram.transformation?[...diagram.nodes,{x:270,y:20,w:520,h:76}]:diagram.nodes;
+  const used=[];
+  return diagram.edges.map(edge=>{
+    const a=nodes.get(edge.from), b=nodes.get(edge.to);
+    if (!a || !b) return null;
+    let points=edge.d?edgeWaypoints(edge.d):[];
+    const segments=routeSegments(points);
+    const prescribed=segments.length && endPort(segments[0],a) && endPort(segments.at(-1).slice().reverse(),b) &&
+      segments.every(segment=>!blocks.some(n=>touchesBlock(segment,n)) && Number.isFinite(routeCost(segment,used)));
+    if (!prescribed) points=orthogonalRoute(a,b,blocks,used,diagram.width,diagram.height,
+      diagram.portLead || routeClearance);
+    if (points.length<2) return null;
+    used.push(...routeSegments(points));
+    const path='M'+points[0].join(' ')+points.slice(1).map((point,i)=>
+      (sameCoordinate(point[0],points[i][0])?'V'+point[1]:'H'+point[0])).join('');
+    return {path,points};
+  });
+}
+function diagramLabels(diagram,routes) {
+  const occupied=diagram.nodes.slice();
+  if (diagram.transformation) occupied.push({x:270,y:20,w:520,h:76});
+  const segments=routes.flatMap(route=>route?routeSegments(route.points):[]);
+  const overlaps=(a,b)=>a.x<b.x+b.w+4 && a.x+a.w+4>b.x && a.y<b.y+b.h+4 && a.y+a.h+4>b.y;
+  return diagram.edges.map((edge,i)=>{
+    if (!edge.label || !routes[i]) return null;
+    const lines=edge.label.split('\n');
+    const width=Math.ceil(Math.max(...lines.map(line=>diagramTextWidth(line,'edge-label'))))+8;
+    const extraHeight=15*(lines.length-1);
+    const legs=routeSegments(routes[i].points);
+    const candidates=edge.lx==null?[]:[[edge.lx+width/2,edge.ly]];
+    for (const [a,b] of legs) {
+      for (const fraction of [0.5,0.25,0.75]) {
+        const x=a[0]+(b[0]-a[0])*fraction, y=a[1]+(b[1]-a[1])*fraction;
+        if (sameCoordinate(a[1],b[1])) candidates.push([x,y-8],[x,y+20]);
+        else candidates.push([x+width/2+8,y+4],[x-width/2-8,y+4]);
+      }
+    }
+    const openPosition=([x,y])=>{
+      const box={x:x-width/2,y:y-14,w:width,h:18+extraHeight};
+      if (box.x<2 || box.y<2 || box.x+width>diagram.width-2 || box.y+box.h>diagram.height-2 ||
+          occupied.some(other=>overlaps(box,other)) || segments.some(segment=>touchesBlock(segment,box,3))) return null;
+      return {x,y,box,lines};
+    };
+    let position;
+    for (const candidate of candidates) {
+      position=openPosition(candidate);
+      if (position) break;
+    }
+    if (!position) {
+      const [ax,ay]=candidates[0];
+      let shortest=Infinity;
+      for (let y=20;y<diagram.height-6;y+=12) {
+        for (let x=width/2+4;x<diagram.width-width/2;x+=12) {
+          const distance=Math.abs(x-ax)+Math.abs(y-ay);
+          if (distance>=shortest) continue;
+          const candidate=openPosition([x,y]);
+          if (candidate) {
+            position=candidate;
+            shortest=distance;
+          }
+        }
+      }
+    }
+    if (position) occupied.push(position.box);
+    return position ?? null;
+  });
 }
 const flowLayer = kind => ['gas','heat','recycle','control'].includes(kind) ? kind : 'material';
 function svgDiagram(diagram) {
-  const nodes = new Map(diagram.nodes.map(n=>[n.id,n]));
-  const markers = Object.entries(flowColors).map(([kind,color])=>'<marker id="arrow-'+kind+'" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" viewBox="0 0 7 7"><path fill="'+color+'" d="M0 0 7 3.5 0 7Z"/></marker>').join('');
+  const paths = diagramRoutes(diagram);
+  const labels = diagramLabels(diagram,paths);
+  const markers = Object.entries(flowColors).map(([kind,color])=>'<marker id="arrow-'+kind+'" markerWidth="7" markerHeight="7" refX="7" refY="3.5" orient="auto" viewBox="0 0 7 7"><path fill="'+color+'" d="M0 0 7 3.5 0 7Z"/></marker>').join('');
   const routes = diagram.edges.map((e,i)=>{
-    if (!nodes.has(e.from) || !nodes.has(e.to)) return '';
-    const path = e.d || defaultPath(nodes.get(e.from),nodes.get(e.to));
+    if (!paths[i]) return '';
+    const {path} = paths[i];
     const airflowReduced = isFaultDemo() && [e.from,e.to].some(id=>id==='FN-201' || id===rawSupport) && e.kind==='gas';
     const blocked = demoState.enabled && demoState.scenario==='idle' && [e.from,e.to].some(id=>['BC-501','Z04-L01-P03','Z04-L01'].includes(id));
     const color=flowColors[e.kind];
     return '<g data-layer="'+flowLayer(e.kind)+'" data-edge="'+i+'" data-from="'+esc(e.from)+'" data-to="'+esc(e.to)+'"><path class="edge-line" style="--flow:'+color+'" data-kind="'+e.kind+'" d="'+path+'" marker-end="url(#arrow-'+e.kind+')"><title>'+esc(e.label || title(e.from)+' → '+title(e.to))+'</title></path>'+
-      (!blocked?'<path class="flow-motion" style="--flow:'+color+(airflowReduced?';animation-duration:4s':'')+'" d="'+path+'"/>':'')+
-      (e.label && e.lx!=null?'<text class="edge-label" style="--flow:'+color+'" x="'+e.lx+'" y="'+e.ly+'">'+esc(e.label)+'</text>':'')+'</g>';
+      (!blocked?'<path class="flow-motion" style="--flow:'+color+(airflowReduced?';animation-duration:4s':'')+'" d="'+path+'"/>':'')+'</g>';
+  }).join('');
+  const annotations=labels.map((label,i)=>{
+    if (!label) return '';
+    const edge=diagram.edges[i];
+    return '<text class="edge-label" data-layer="'+flowLayer(edge.kind)+'" text-anchor="middle" style="--flow:'+
+      flowColors[edge.kind]+'" x="'+label.x+'" y="'+label.y+'">'+label.lines.map((line,i)=>
+      '<tspan x="'+label.x+'" dy="'+(i?15:0)+'">'+esc(line)+'</tspan>').join('')+'</text>';
   }).join('');
   const visual = diagram.transformation ? transformStrip(diagram.transformation) : '';
-  return '<svg id="diagram" viewBox="0 0 '+diagram.width+' '+diagram.height+'" aria-label="Sơ đồ '+esc(title(selected))+'"><defs>'+markers+'</defs>'+routes+diagram.nodes.map(renderNode).join('')+visual+'</svg>';
+  return '<svg id="diagram" viewBox="0 0 '+diagram.width+' '+diagram.height+'" aria-label="Sơ đồ '+esc(title(selected))+'"><defs>'+markers+'</defs>'+routes+diagram.nodes.map(renderNode).join('')+visual+annotations+'</svg>';
 }
 function transformStrip([before,after,kind]) {
   const specks = (x,y,r,count,color) => Array.from({length:count},(_,i)=>'<circle cx="'+(x+i*(2*r+3))+'" cy="'+(y+(i%2)*4)+'" r="'+r+'" fill="'+color+'"/>').join('');
@@ -627,9 +915,23 @@ const operationComponents = {
   draft_sensor:['Điểm đo áp suất',{draft_suction_pa:['Độ lớn áp suất hút','Pa']}],
   mill_hot_gas:['Nguồn khí nóng từ PH-301',{heat_fraction:['Nhiệt khả dụng tương đối','%']}],
   preheater_exhaust_heat:['Nhánh khí nóng đến RM-201',{heat_fraction:['Nhiệt khả dụng tương đối','%']}],
-  drive:['Truyền động',{}],filling_head:['Đầu nạp bao',{}],loading_spout:['Ống xuất rời',{}]
+  outlet_gate:['Cửa xả',{}],
+  bearing:['Ổ trục máy nghiền',{vibration_mm_s:['Độ rung RMS','mm/s']}],
+  drive:['Truyền động',{current_a:['Dòng điện','A']}],filling_head:['Đầu nạp bao',{}],loading_spout:['Ống xuất rời',{}]
 };
 const equipmentFaults = {
+  'WS-502':[["truck_scale_signal_loss","load_cell","unavailable","Mất tín hiệu cân"]],
+  'FD-502':[["bulk_feeder_jam","feeder_drive","jam","Kẹt truyền động cấp liệu"]],
+  'LD-501':[["bag_loader_stop","drive","unavailable","Cụm xếp bao dừng"]],
+  'BC-501':[["bag_conveyor_trip","belt","unavailable","Băng tải dừng"]],
+  'FD-501':[["bag_feeder_jam","feeder_drive","jam","Kẹt truyền động cấp liệu"]],
+  'SL-401':[["cement_silo_level_loss","level_sensor","signal_loss","Mất tín hiệu mức"],["cement_silo_gate_blockage","outlet_gate","unavailable","Cửa xả chung bị khóa"]],
+  'FN-401B':[["cement_fan_b_trip","fan_drive","trip","Trip quạt"]],
+  'FN-401A':[["cement_fan_a_trip","fan_drive","trip","Trip quạt"]],
+  'SP-401B':[["cement_separator_b_trip","separator_drive","trip","Trip rotor phân ly"]],
+  'SP-401A':[["cement_separator_a_trip","separator_drive","trip","Trip rotor phân ly"]],
+  'WF-401B':[["cement_feeder_b_jam","feeder_drive","jam","Kẹt truyền động cấp liệu"]],
+  'WF-401A':[["cement_feeder_a_jam","feeder_drive","jam","Kẹt truyền động cấp liệu"]],
   'CR-101':[
   ['crusher_rotor_jam','rotor','jam','Kẹt rotor'],
   ['crusher_tool_wear','rotor','tool_wear','Mòn bộ phận đập'],
@@ -706,8 +1008,8 @@ const equipmentFaults = {
     ['clinker_silo_outlet_blockage','outlet_chute','bridging','Tắc cửa xả clinker'],
     ['clinker_silo_level_signal_loss','level_sensor','signal_loss','Mất tín hiệu mức']
   ],
-  'CM-401A':[['cement_mill_a_trip','drive','unavailable','Trip truyền động']],
-  'CM-401B':[['cement_mill_b_trip','drive','unavailable','Trip truyền động']],
+  'CM-401A':[["cement_mill_a_wear","bearing","wear","Mòn ổ trục"],['cement_mill_a_trip','drive','unavailable','Trip truyền động']],
+  'CM-401B':[["cement_mill_b_wear","bearing","wear","Mòn ổ trục"],['cement_mill_b_trip','drive','unavailable','Trip truyền động']],
   'PK-501':[['bag_packer_jam','filling_head','unavailable','Kẹt đầu nạp bao']],
   'SP-502':[['bulk_loading_stop','loading_spout','unavailable','Ống xuất rời không sẵn sàng']]
 };
@@ -731,10 +1033,15 @@ const processNotices = {
   mill_kiln_heat_reduced:'Nhiệt khí từ hệ nung giảm · Dùng nguồn nhiệt dự phòng'
 };
 const waitingLabels = {
+  truck_exchange:'Đang thay xe',
+  cement_compartment_full:'Ngăn silo đầy',
+  cement_compartment_empty:'Ngăn silo hết xi măng',
   reclaimer_discharge_unavailable:'Phễu nhận chưa sẵn sàng',
   reclaimer_stock_empty:'Kho nguồn không còn liệu'
 };
 const simulationMetrics = {
+  clinker_tph:['Clinker','t/h'],gypsum_tph:['Thạch cao','t/h'],additive_tph:['Phụ gia','t/h'],
+  truck_net_t:['Khối lượng xi măng trên xe','t'],
   operating_state:['Trạng thái vận hành',''],
   inlet_tph:['Lưu lượng vào','t/h'],outlet_tph:['Lưu lượng ra','t/h'],
   fresh_inlet_tph:['Lưu lượng cấp mới','t/h'],recycle_tph:['Hồi lưu','t/h'],
@@ -780,7 +1087,7 @@ function simulationPanel() {
   const available=Boolean(simulationAssets[simulation.asset]) && location.protocol!=='file:';
   const assetFaults=equipmentFaults[simulation.asset];
   const faults=assetFaults
-    ? assetFaults.map(([key,component,,label])=>[key,operationComponents[component][0]+' · '+label])
+    ? assetFaults.map(([key,component,,label])=>[key,(operationComponents[component]?.[0] || component)+' · '+label])
     : [];
   return '<div id="simulation-panel" class="simulation-panel"><header data-operation-handle><div><h2 id="operation-title">Thông số vận hành</h2>'+
     '<p class="muted">'+esc(simulation.asset+' · '+title(simulation.asset))+'</p></div>'+

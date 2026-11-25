@@ -1,0 +1,12 @@
+{
+  "id": "cement_feeder_b_jam",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "WF-401B.feeder_drive.jam",
+      "value": 1
+    }
+  ]
+}

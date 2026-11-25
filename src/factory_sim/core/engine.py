@@ -11,12 +11,15 @@ from factory_sim.bulk_components import BULK_COMPONENT_MODELS, Reclaimer
 from factory_sim.milling_components import MILLING_COMPONENT_MODELS
 from factory_sim.kiln_components import KILN_COMPONENT_MODELS, ClinkerCooler, CyclonePreheater, KilnStage, RotaryKiln
 from factory_sim.cement_dispatch import CementDispatch
+from factory_sim.finishing_components import FINISHING_COMPONENT_MODELS
 
 
-def segments(plant, assets):
+def segments(plant, assets, branch_assets=()):
     routes, parents, fans, returns = {}, {}, {}, {}
     for connection in plant["connections"]:
         source, target = (connection[k].split(".")[0] for k in ("from", "to"))
+        if source in branch_assets or target in branch_assets:
+            continue
         kind = connection["kind"]
         if kind == "material":
             if source in routes or target in parents:
@@ -28,11 +31,13 @@ def segments(plant, assets):
         elif kind == "recycle":
             returns[source] = target
     kinds = {key: asset["model"]["implementation"] for key, asset in assets.items()}
-    material_assets = {key for key, kind in kinds.items() if kind not in {"fan", "dispatch_device"}}
+    material_assets = {key for key, kind in kinds.items() if kind != "fan" and key not in branch_assets}
     heads = set(plant["feeds"])
     if heads != material_assets - parents.keys():
         raise ValueError("Each material line needs one external feed")
     for key, kind in kinds.items():
+        if key in branch_assets:
+            continue
         if kind == "dryer_mill" and (
             kinds.get(fans.get(key)) != "fan" or kinds.get(routes.get(key)) != "separator"
             or returns.get(routes.get(key)) != key
@@ -62,7 +67,12 @@ def segments(plant, assets):
 
 
 def simulate(plant, assets, scenario, live_events=None):
-    paths, kinds, fans, routes = segments(plant, assets)
+    dispatch_config = plant.get("cement_dispatch")
+    dispatch = CementDispatch(dispatch_config, plant["connections"], assets) if dispatch_config else None
+    branch_assets = dispatch.assets if dispatch else set()
+    paths, kinds, fans, routes = segments(plant, assets, branch_assets)
+    if dispatch and dispatch.source in routes:
+        raise ValueError("Cement dispatch source must end the clinker line")
     parents = {target: source for source, target in routes.items()}
     step = plant["step_s"]
     if type(step) is not int or step <= 0 or scenario["duration_s"] % step:
@@ -74,7 +84,7 @@ def simulate(plant, assets, scenario, live_events=None):
         key: BULK_COMPONENT_MODELS[asset["model"]["component_model"]](nominal[key])
         for key, asset in assets.items() if asset["model"].get("component_model") in BULK_COMPONENT_MODELS
     }
-    process_models = {**MILLING_COMPONENT_MODELS, **KILN_COMPONENT_MODELS}
+    process_models = {**MILLING_COMPONENT_MODELS, **KILN_COMPONENT_MODELS, **FINISHING_COMPONENT_MODELS}
     process_components = {
         key: process_models[asset["model"]["component_model"]](nominal[key])
         for key, asset in assets.items() if asset["model"].get("component_model") in process_models
@@ -100,10 +110,6 @@ def simulate(plant, assets, scenario, live_events=None):
     kiln_heat = dict.fromkeys(kiln_preheat.values(), 1.0)
     recovered_fraction = dict.fromkeys(raw_heat, 1.0)
     params = nominal
-    dispatch_config = plant.get("cement_dispatch")
-    dispatch = CementDispatch(dispatch_config) if dispatch_config else None
-    if dispatch and dispatch_config["clinker_source"] in routes:
-        raise ValueError("Cement dispatch source must end the clinker line")
     profile = scenario.get("profile", {})
     seed = profile.get("seed", 0)
     feed_variation = profile.get("feed_variation", {})
@@ -129,10 +135,7 @@ def simulate(plant, assets, scenario, live_events=None):
             key, name = event["target"].split(".", 1)
             if "." in name:
                 component, fault = name.split(".", 1)
-                if kinds[key] == "dispatch_device":
-                    dispatch.inject(key, component, fault, event["value"], start)
-                else:
-                    component_models[key].inject(component, fault, event["value"], start)
+                component_models[key].inject(component, fault, event["value"], start)
             else:
                 nominal[key][name] = event["value"]
         params = {**nominal, **{
@@ -165,7 +168,6 @@ def simulate(plant, assets, scenario, live_events=None):
         boundary_in, boundary_out = Material(), Material()
         evaporated = co2_released = 0.0
         data = {key: {} for key in assets}
-        dispatch_data = {}
         for key, kind in kinds.items():
             if kind == "fan":
                 data[key] = {"airflow_m3_s": Fan.airflow(params[key])}
@@ -185,8 +187,9 @@ def simulate(plant, assets, scenario, live_events=None):
                 source = Material.wet_mass(feed["flow_tph"] * hours, feed["moisture_fraction"])
             nodes = path[1:] if origin else path
             if not nodes:
-                if dispatch and origin == dispatch_config["clinker_source"]:
-                    accepted, additions, delivered, dispatch_data = dispatch.step(source, hours)
+                if dispatch and origin == dispatch.source:
+                    accepted, additions, delivered = dispatch.step(
+                        source, hours, params, data, process_components[dispatch.silo].blocked, start)
                     outflow[origin] = accepted
                     boundary_in = boundary_in.plus(additions)
                     boundary_out = boundary_out.plus(delivered)
@@ -277,7 +280,7 @@ def simulate(plant, assets, scenario, live_events=None):
             raise RuntimeError(f"Mass balance failure at {start + step} s")
         for key, values in data.items():
             operating = values.get("airflow_m3_s", values.get("inlet_tph", 0)) or values.get("outlet_tph", 0)
-            if key not in stocks:
+            if key not in stocks and "operating_state" not in values:
                 values["operating_state"] = "RUNNING" if operating else "STOPPED"
             if "capacity_tph" in params[key]:
                 values["configured_capacity_tph"] = nominal[key]["capacity_tph"]
@@ -298,6 +301,15 @@ def simulate(plant, assets, scenario, live_events=None):
             data[target]["recovered_heat_kw"] = recovered
         measured = {key: sampled_values(data[key], config, f"{seed}:{key}:sensor", start + step)
                     for key, config in signals.items()}
+        if dispatch:
+            stock = data[dispatch.silo]["grades"]
+            level_signal = signals.get(dispatch.silo, {}).get("inventory_t")
+            if level_signal:
+                measured[dispatch.silo]["grades"] = sampled_values(
+                    stock, dict.fromkeys(stock, level_signal), f"{seed}:{dispatch.silo}:grade", start + step)
+                measured[dispatch.silo]["inventory_t"] = sum(measured[dispatch.silo]["grades"].values())
+                measured[dispatch.silo]["level_fraction"] = (measured[dispatch.silo]["inventory_t"] /
+                    sum(p["capacity_t"] for p in dispatch.settings.values()))
         for key, runtime in bulk_components.items():
             route_status = {}
             if isinstance(runtime, Reclaimer):
@@ -330,9 +342,6 @@ def simulate(plant, assets, scenario, live_events=None):
         for key in component_models:
             components = sampled_components(data[key]["components"], f"{seed}:{key}:sensor", start + step)
             measured.setdefault(key, {})["components"] = components
-        if dispatch:
-            data.update(dispatch_data)
-            measured.update(dispatch.measurements(dispatch_data, seed, start + step))
         yield {"time_s": start + step, "events": interval_events, "equipment": data,
                "measurements": measured,
                "balance": {"dry_residual_t": errors.dry, "water_residual_t": errors.water,
