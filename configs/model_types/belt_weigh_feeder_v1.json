@@ -1,0 +1,26 @@
+{
+  "id": "belt_weigh_feeder_v1",
+  "implementation": "throughput",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    },
+    "belt_speed_m_s": {
+      "min": 0.01,
+      "unit": "m/s"
+    }
+  },
+  "component_model": "weigh_feeder"
+}

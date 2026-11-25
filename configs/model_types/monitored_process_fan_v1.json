@@ -1,0 +1,30 @@
+{
+  "id": "monitored_process_fan_v1",
+  "implementation": "fan",
+  "ports": {
+    "air_out": [
+      "out",
+      "gas"
+    ]
+  },
+  "parameters": {
+    "airflow_m3_s": {
+      "unit": "m³/s",
+      "min": 0,
+      "runtime": true
+    },
+    "fan_speed_rpm": {
+      "min": 0.01,
+      "unit": "rpm"
+    },
+    "bearing_temperature_c": {
+      "min": 0,
+      "unit": "°C"
+    },
+    "bearing_trip_c": {
+      "min": 0,
+      "unit": "°C"
+    }
+  },
+  "component_model": "raw_mill_fan"
+}

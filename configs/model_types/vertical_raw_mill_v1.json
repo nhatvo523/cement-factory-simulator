@@ -1,0 +1,62 @@
+{
+  "id": "vertical_raw_mill_v1",
+  "implementation": "dryer_mill",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ],
+    "air_in": [
+      "in",
+      "gas"
+    ],
+    "recycle_in": [
+      "in",
+      "recycle"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    },
+    "target_moisture_fraction": {
+      "unit": "1",
+      "min": 0,
+      "max": 0.999
+    },
+    "evaporation_capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    },
+    "heat_availability_fraction": {
+      "unit": "1",
+      "min": 0,
+      "max": 1,
+      "runtime": true
+    },
+    "reference_airflow_m3_s": {
+      "unit": "m³/s",
+      "min": 0.001
+    },
+    "motor_current_a": {
+      "min": 0.01,
+      "unit": "A"
+    },
+    "grinding_pressure_bar": {
+      "min": 0.01,
+      "unit": "bar"
+    },
+    "vibration_trip_delay_s": {
+      "min": 1,
+      "unit": "s"
+    }
+  },
+  "component_model": "grinding_mill"
+}

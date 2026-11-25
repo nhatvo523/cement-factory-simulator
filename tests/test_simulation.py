@@ -250,6 +250,41 @@ class SimulationTest(unittest.TestCase):
         self.assertAlmostEqual(first["equipment"]["BUFFER"]["inventory_t"], 2.1)
         self.assertAlmostEqual(first["equipment"]["DISCHARGE"]["outlet_tph"], 6)
 
+    def test_weigh_feeder_bias_changes_measurement_and_physical_feed(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        baseline = handler.operation({})["frames"][10]
+        frame = handler.operation({"fault": ["feeder_scale_bias@600"]})["frames"][10]
+        physical = frame["equipment"]["weigh_feeder"]["outlet_tph"]
+        reported = frame["measurements"]["weigh_feeder"]["outlet_tph"]
+        self.assertLess(physical, baseline["equipment"]["weigh_feeder"]["outlet_tph"])
+        self.assertGreater(reported, physical * 1.2)
+        result = handler.operation({"fault": ["feeder_scale_loss@600", "feeder_scale_bias@600"]})["frames"][10]
+        self.assertIsNone(result["measurements"]["weigh_feeder"]["outlet_tph"])
+        self.assertEqual(result["equipment"]["weigh_feeder"]["outlet_tph"], 0)
+
+    def test_separator_component_faults_affect_recycle_and_interlock_mill(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        baseline = handler.operation({})["frames"][10]["equipment"]
+        slow = handler.operation({"fault": ["separator_underspeed@600"]})["frames"][10]["equipment"]
+        self.assertLess(slow["separator"]["recycle_tph"], baseline["separator"]["recycle_tph"])
+        self.assertAlmostEqual(slow["separator"]["recycle_tph"], slow["drying_mill"]["recycle_tph"])
+        frame = handler.operation({"fault": ["separator_drive_trip@600"]})["frames"][10]
+        self.assertEqual(frame["equipment"]["separator"]["operating_state"], "TRIPPED")
+        self.assertEqual(frame["equipment"]["drying_mill"]["fresh_inlet_tph"], 0)
+        self.assertEqual(frame["equipment"]["drying_mill"]["process_notice"], "mill_separator_unavailable")
+        self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
+
+    def test_fan_impeller_fault_reduces_silo_input_before_kiln_feed(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        baseline = handler.operation({})["frames"][10]["equipment"]
+        frame = handler.operation({"fault": ["fan_impeller_degradation@600"]})["frames"][10]
+        equipment = frame["equipment"]
+        self.assertEqual(equipment["process_fan"]["active_faults"][0]["component"], "impeller")
+        self.assertEqual(equipment["drying_mill"]["process_notice"], "mill_low_airflow")
+        self.assertLess(equipment["product_silo"]["inlet_tph"], baseline["product_silo"]["inlet_tph"])
+        self.assertAlmostEqual(equipment["downstream_feeder"]["outlet_tph"], baseline["downstream_feeder"]["outlet_tph"])
+        self.assertAlmostEqual(frame["balance"]["water_residual_t"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

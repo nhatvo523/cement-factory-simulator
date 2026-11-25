@@ -1,0 +1,12 @@
+{
+  "id": "fan_impeller_degradation",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "process_fan.impeller.degradation",
+      "value": 0.65
+    }
+  ]
+}

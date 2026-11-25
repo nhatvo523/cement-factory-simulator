@@ -314,9 +314,7 @@ function factoryGraph() {
     ed('Z03-L02','SL-401','cement','','M759 352H782V225H814'),
     ed('SL-401','Z04-L01','cement','Cấp đóng bao','M909 252V320',917,289),
     ed('SL-401','Z04-L02','cement','Cấp xuất rời','M1012 220H1033V516H1012',930,451),
-    ed('Z02-L01','Z01-L02','heat','Khí nóng khi khả dụng','M299 384H275V460H251V393H241',109,464),
-    ed('Z02-L01','Z02-L01','gas','Draft hệ nung','M479 413V434H319V413',321,446),
-    ...[['Z01-L02',37,413],['Z03-L01',555,252],['Z03-L02',555,413]].map(([id,x,y])=>ed(id,id,'recycle','Hạt thô hồi lưu','M'+(x+146)+' '+y+'v23h-127v-23',x+25,y+26))
+    ed('Z02-L01','Z01-L02','heat','Khí nóng khi khả dụng','M299 384H275V460H251V393H241',109,464)
   ];
   return graph(nodes,edges,1060,590);
 }
@@ -325,19 +323,17 @@ function zoneGraph(d) {
   const l = list('Line',d.id).map(x=>x.id);
   if (d.id === 'Z03') return graph([nd('SL-302',36,214,195,100,'SL-302'),nd(l[0],425,104,212,100,'CM-401A'),nd(l[1],425,322,212,100,'CM-401B'),nd('SL-401',824,214,195,100,'SL-401')],[
     ed('SL-302',l[0],'clinker','Clinker','M231 252H330V154H425',255,242),ed('SL-302',l[1],'clinker','','M231 276H330V372H425'),
-    ed(l[0],'SL-401','cement','Xi măng','M637 154H731V252H824',735,240),ed(l[1],'SL-401','cement','','M637 372H731V276H824'),
-    ...l.map((id,i)=>ed(id,id,'recycle','Phân ly & hồi lưu','M604 '+(204+i*218)+'v39h-153v-39',475,236+i*218))
+    ed(l[0],'SL-401','cement','Xi măng','M637 154H731V252H824',735,240),ed(l[1],'SL-401','cement','','M637 372H731V276H824')
   ],1060,520);
   if (d.id === 'Z04') return graph([nd('SL-401',65,218,220,104,'SL-401','Tồn kho theo mác'),nd(l[0],567,110,265,104,'PK-501','Xi măng bao'),nd(l[1],567,332,265,104,'SP-502','Xi măng rời')],[
     ed('SL-401',l[0],'cement','Tuyến bao','M285 254H428V162H567',440,153),ed('SL-401',l[1],'cement','Tuyến rời','M285 284H428V384H567',440,375)
   ],970,530);
   if (d.id === 'Z01') return graph([nd(l[0],28,195,221,108,'CR-101'),nd('BN-101',285,195,174,108,'BN-101','Đệm đầu vào'),nd(l[1],503,195,205,108,'RM-201'),nd('SL-301',775,195,190,108,'SL-301'),nd('FN-201',524,370,183,97,'FN-201')],[
-    ed(l[0],'BN-101','raw'),ed('BN-101',l[1],'raw'),ed(l[1],'SL-301','meal'),ed('FN-201',l[1],'gas','Khí qua mill','M615 370V303',625,344),
-    ed(l[1],l[1],'recycle','Hồi lưu hạt thô','M668 195V142H543V195',546,132)
+    ed(l[0],'BN-101','raw'),ed('BN-101',l[1],'raw'),ed(l[1],'SL-301','meal'),ed('FN-201',l[1],'gas','Khí qua mill','M615 370V303',625,344)
   ],1000,515);
   return graph([nd('SL-301',45,184,195,112,'SL-301'),nd(l[0],411,184,228,112,'KL-301'),nd('SL-302',815,184,195,112,'SL-302'),nd('CF-301',432,369,190,92,'CF-301')],[
     ed('SL-301',l[0],'meal','Bột liệu',null,283,225),ed(l[0],'SL-302','clinker','Clinker nguội',null,665,225),
-    ed(l[0],'CF-301','gas','Khí thải hệ nung','M525 296V369',540,340),ed(l[0],l[0],'heat','Nhiệt thu hồi từ cooler','M594 184v-57H453v57',461,117)
+    ed(l[0],'CF-301','gas','Khí thải hệ nung','M525 296V369',540,340)
   ],1050,510);
 }
 
@@ -354,10 +350,10 @@ function lineGraph(d) {
   const xmid = i => nodes[i].x+w/2;
   if (d.id === 'Z01-L02' || d.id.startsWith('Z03')) {
     const fan = d.id === 'Z01-L02' ? rawSupport : lineEquip(d.id).at(-1);
-    const mill = main[1].id, separator = main[2].id;
+    const separator = main[2].id;
     nodes.push(nd(fan,xmid(1)-74,368,149,102,fan===rawSupport?'FN-201':fan,'Hỗ trợ dòng khí'));
-    edges.push(ed(fan,mill,'gas','Khí qua mill','M'+xmid(1)+' 368V302',xmid(1)+8,339));
-    edges.push(ed(separator,mill,'recycle','Hạt thô hồi lưu','M'+xmid(2)+' 190V127H'+xmid(1)+'V190',xmid(1)+14,116));
+    edges.push(ed(fan,main[1].id,'gas','Khí qua mill','M'+xmid(1)+' 368V302',xmid(1)+8,339));
+    edges.push(ed(separator,main[1].id,'recycle','Hạt thô hồi lưu','M'+xmid(2)+' 190V127H'+xmid(1)+'V190',xmid(1)+14,116));
     const to = d.id === 'Z01-L02' ? 'SL-301' : 'SL-401';
     nodes.push(nd(to,xmid(2)-74,368,149,102,to,'Sản phẩm mịn'));
     edges.push(ed(separator,to,flowForLine(d.id),d.id==='Z01-L02'?'Chuyển bột liệu':'Xi măng đạt mác','M'+xmid(2)+' 302V368',xmid(2)-69,339));
@@ -513,7 +509,7 @@ function renderNode(n) {
     svgText(tag,textX,n.y+21,'node-id',40,1)+
     svgText(n.label || d?.name,textX,n.y+43,'node-label',chars,custom?4:(n.h<90?2:3))+
     (n.caption && n.h>=86 && leading+18<n.w ? svgText(n.caption,textX,n.y+n.h-10,'node-caption',chars,1) : '')+
-    ((!custom && (demoState.enabled || isAsset || d.parent==='Z01-L01')) ? '<circle class="status-dot" cx="'+(n.x+n.w-10)+'" cy="'+(n.y+12)+'" r="3.4"/>' : '')+'</g>';
+    ((!custom && (demoState.enabled || isAsset || ['Z01-L01','Z01-L02'].includes(d.parent))) ? '<circle class="status-dot" cx="'+(n.x+n.w-10)+'" cy="'+(n.y+12)+'" r="3.4"/>' : '')+'</g>';
 }
 function defaultPath(a,b) {
   const ay = a.y+a.h/2, by = b.y+b.h/2;
@@ -566,7 +562,7 @@ const simulationAssets = {
   'SL-301':'product_silo','KF-301':'downstream_feeder'
 };
 const simulationScenarios = {
-  fan_derate:'Quạt nghiền liệu suy giảm',downstream_feed_stop:'Hạ nguồn dừng nhận liệu'
+  downstream_feed_stop:'Hạ nguồn dừng nhận liệu'
 };
 const operationComponents = {
   main_motor:['Motor chính',{current_a:['Dòng điện','A'],winding_temperature_c:['Nhiệt độ cuộn dây','°C']}],
@@ -588,9 +584,19 @@ const operationComponents = {
   harrow_encoder:['Encoder giàn cào',{position_m:['Vị trí ngang','m'],travel_speed_m_min:['Tốc độ di chuyển','m/min'],
     signal_quality:['Chất lượng tín hiệu','']}],
   discharge_interlock:['Đường xả',{condition:['Sẵn sàng nhận liệu','']}],
-  outlet_chute:['Cửa xả phễu',{condition:['Tình trạng','']}]
+  outlet_chute:['Cửa xả phễu',{condition:['Tình trạng','']}],
+  feeder_drive:['Truyền động băng cân',{speed_m_s:['Tốc độ băng','m/s']}],
+  load_cell:['Load cell cân định lượng',{signal_quality:['Chất lượng tín hiệu','']}],
+  grinding_roller:['Con lăn nghiền',{}],
+  hydraulic_unit:['Cụm thủy lực',{pressure_bar:['Áp suất nghiền','bar']}],
+  mill_vibration_sensor:['Cảm biến rung máy nghiền',{vibration_mm_s:['Độ rung RMS','mm/s'],signal_quality:['Chất lượng tín hiệu','']}],
+  separator_drive:['Truyền động rotor phân ly',{speed_rpm:['Tốc độ rotor','rpm']}],
+  impeller:['Cánh quạt',{}],
+  damper:['Van điều tiết khí',{opening_fraction:['Độ mở đo','%']}],
+  fan_drive:['Truyền động quạt',{speed_rpm:['Tốc độ quạt','rpm']}],
+  fan_bearing:['Ổ trục quạt',{temperature_c:['Nhiệt độ','°C']}]
 };
-const lineOneFaults = {
+const equipmentFaults = {
   'CR-101':[
   ['crusher_rotor_jam','rotor','jam','Kẹt rotor'],
   ['crusher_tool_wear','rotor','tool_wear','Mòn bộ phận đập'],
@@ -617,13 +623,40 @@ const lineOneFaults = {
   'BN-101':[
     ['feed_bin_outlet_bridging','outlet_chute','bridging','Tạo vòm liệu'],
     ['feed_bin_level_signal_loss','level_sensor','signal_loss','Mất tín hiệu']
+  ],
+  'WF-201':[
+    ['feeder_drive_jam','feeder_drive','jam','Kẹt băng cân'],
+    ['feeder_scale_bias','load_cell','positive_bias','Báo lưu lượng cao giả'],
+    ['feeder_scale_loss','load_cell','signal_loss','Mất tín hiệu cân']
+  ],
+  'RM-201':[
+    ['mill_roller_wear','grinding_roller','wear','Mòn con lăn'],
+    ['mill_roller_imbalance','grinding_roller','imbalance','Mất cân bằng con lăn'],
+    ['mill_hydraulic_loss','hydraulic_unit','pressure_loss','Mất áp suất nghiền'],
+    ['mill_vibration_signal_loss','mill_vibration_sensor','signal_loss','Mất tín hiệu rung']
+  ],
+  'SP-201':[
+    ['separator_underspeed','separator_drive','underspeed','Rotor thiếu tốc độ'],
+    ['separator_drive_trip','separator_drive','trip','Trip truyền động']
+  ],
+  'FN-201':[
+    ['fan_impeller_degradation','impeller','degradation','Suy giảm cánh quạt'],
+    ['fan_damper_stuck','damper','stuck_low','Kẹt ở độ mở thấp'],
+    ['fan_bearing_overheat','fan_bearing','overheating','Quá nhiệt ổ trục']
   ]
 };
 const protectionLabels = {
   motor_overcurrent:'Quá dòng motor',low_oil_pressure:'Áp suất dầu thấp',
   motor_overtemperature:'Cuộn dây motor quá nhiệt',bearing_overtemperature:'Ổ trục đầu dẫn động quá nhiệt',
   belt_misalignment:'Bảo vệ lệch băng',reclaimer_overload:'Quá tải xích cào',
-  reclaimer_travel_stall:'Cầu không di chuyển'
+  reclaimer_travel_stall:'Cầu không di chuyển',
+  feeder_drive_jam:'Kẹt truyền động băng cân',feeder_scale_unavailable:'Mất tín hiệu load cell',
+  mill_low_hydraulic_pressure:'Áp suất nghiền thấp',mill_high_vibration:'Rung máy nghiền cao',
+  separator_drive_trip:'Trip truyền động rotor',fan_bearing_overtemperature:'Quá nhiệt ổ trục quạt'
+};
+const processNotices = {
+  mill_low_airflow:'Khí sấy thấp từ quạt nghiền liệu',
+  mill_separator_unavailable:'Máy phân ly chưa sẵn sàng'
 };
 const waitingLabels = {
   reclaimer_discharge_unavailable:'Phễu nhận chưa sẵn sàng',
@@ -641,12 +674,16 @@ const simulationMetrics = {
   level_fraction:['Mức đo','%'],airflow_m3_s:['Lưu lượng khí','m³/s'],
   inlet_moisture_fraction:['Độ ẩm đầu vào','%']
 };
-const lineOneOverview = {
+const equipmentOverview = {
   'CR-101':['operating_state','inlet_tph','outlet_tph','inlet_moisture_fraction'],
   'BC-101':['operating_state','inlet_tph','outlet_tph','belt_inventory_t','belt_level_fraction','belt_moisture_fraction'],
   'ST-101':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph','inventory_moisture_fraction'],
   'RC-101':['operating_state','outlet_tph','reclaimed_total_t','source_inventory_t'],
-  'BN-101':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph','inventory_moisture_fraction']
+  'BN-101':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph','inventory_moisture_fraction'],
+  'WF-201':['operating_state','outlet_tph'],
+  'RM-201':['operating_state','fresh_inlet_tph','outlet_tph','outlet_moisture_fraction','recycle_tph'],
+  'SP-201':['operating_state','inlet_tph','outlet_tph','recycle_tph'],
+  'FN-201':['operating_state','airflow_m3_s']
 };
 const operationLabels = {
   RUNNING:'Đang chạy',STOPPED:'Đã dừng',TRIPPED:'Dừng do bảo vệ',IDLE:'Đang chờ',
@@ -660,7 +697,7 @@ const simulation = {asset:null,session:null,frame:null,faults:new Set(),loading:
 const simulationNumber = new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2});
 function simulationPanel() {
   const available=Boolean(simulationAssets[simulation.asset]) && location.protocol!=='file:';
-  const assetFaults=lineOneFaults[simulation.asset];
+  const assetFaults=equipmentFaults[simulation.asset];
   const faults=assetFaults
     ? assetFaults.map(([key,component,,label])=>[key,operationComponents[component][0]+' · '+label])
     : Object.entries(simulationScenarios);
@@ -747,9 +784,13 @@ function showSimulationFrame() {
     readings.belt_moisture_fraction=readings.inventory_moisture_fraction;
   }
   if (simulation.asset==='RC-101') readings.source_inventory_t=frame.measurements.stockpile?.inventory_t;
-  const overview=lineOneOverview[simulation.asset];
+  const overview=equipmentOverview[simulation.asset];
   const metrics=overview?Object.fromEntries(overview.map(key=>[key,simulationMetrics[key]])):simulationMetrics;
+  if (simulation.asset==='WF-201') metrics.outlet_tph=['Lưu lượng cân đo','t/h'];
+  if (simulation.asset==='RM-201') metrics.outlet_tph=['Lưu lượng sang phân ly','t/h'];
+  if (simulation.asset==='SP-201') metrics.outlet_tph=['Bột mịn sang silo','t/h'];
   const rows=simulationRows(metrics,{...readings,operating_state:values.operating_state},Boolean(overview));
+  if (values.process_notice) rows.push(['Điều kiện công nghệ',processNotices[values.process_notice] || values.process_notice]);
   if (values.trip_reason) rows.push(['Bảo vệ tác động',protectionLabels[values.trip_reason] || values.trip_reason]);
   if (values.waiting_reason) rows.push(['Lý do chờ',waitingLabels[values.waiting_reason] || values.waiting_reason]);
   const componentTables=Object.entries(components).map(([key,signals])=>{
@@ -760,7 +801,7 @@ function showSimulationFrame() {
     return componentRows.length?'<h3>'+esc(label)+'</h3>'+table(['Thông số','Giá trị đo'],componentRows):'';
   });
   const alerts=(values.active_faults || []).map(({component,fault})=>{
-    const entry=lineOneFaults[simulation.asset]?.find(([,source,code])=>source===component && code===fault);
+    const entry=equipmentFaults[simulation.asset]?.find(([,source,code])=>source===component && code===fault);
     return note((entry?.[3] || fault)+' — '+(operationComponents[component]?.[0] || component));
   });
   target.innerHTML=alerts.join('')+table(['Thông số','Giá trị'],rows)+componentTables.join('');
@@ -815,20 +856,20 @@ async function loadOperation(faults=[], reset=false) {
 }
 
 function refreshSimulation() {
-  showLiveLineState();
+  showLiveEquipmentState();
   showSimulationFrame();
   updateFaultControls();
 }
 
-function showLiveLineState() {
+function showLiveEquipmentState() {
   if (!simulation.frame || demoState.enabled) return;
   for (const node of $('canvas').querySelectorAll('[data-node]')) {
     const id=node.dataset.node;
-    const assets=lineOneFaults[id]?[id]:(record.get(id)?.equipment || []).filter(key=>lineOneFaults[key]);
+    const assets=equipmentFaults[id]?[id]:(record.get(id)?.equipment || []).filter(key=>equipmentFaults[key]);
     const states=assets.map(key=>[key,simulation.frame.equipment[simulationAssets[key]]]).filter(([,values])=>values);
     if (!states.length) continue;
     node.classList.toggle('live-running',states.every(([,values])=>['RUNNING','AVAILABLE'].includes(values.operating_state)));
-    node.classList.toggle('live-alert',states.some(([,values])=>values.active_faults?.length));
+    node.classList.toggle('live-alert',states.some(([,values])=>values.active_faults?.length || values.process_notice));
     node.classList.toggle('live-trip',states.some(([,values])=>values.operating_state==='TRIPPED'));
     node.querySelector('title').textContent=states.map(([key,{operating_state:state}])=>key+' · '+(operationLabels[state] || state)).join('\n');
   }
@@ -1260,7 +1301,7 @@ try {
     if (location.protocol!=='file:') {
       loadOperation();
       setInterval(()=>{
-        if (!simulation.session || simulation.asset || selected.startsWith('Z01-L01')) loadOperation();
+        if (!simulation.session || simulation.asset || /^Z01-L0[12]/.test(selected)) loadOperation();
       },1000);
     }
   }

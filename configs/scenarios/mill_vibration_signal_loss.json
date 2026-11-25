@@ -1,0 +1,6 @@
+{
+  "id": "mill_vibration_signal_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [{"at_s": 600, "target": "drying_mill.mill_vibration_sensor.signal_loss", "value": 1}]
+}

@@ -72,35 +72,43 @@
     },
     {
       "id": "weigh_feeder",
-      "model_type": "bulk_throughput_v1",
+      "model_type": "belt_weigh_feeder_v1",
       "parameters": {
-        "capacity_tph": 100
+        "capacity_tph": 100,
+        "belt_speed_m_s": 0.45
       }
     },
     {
       "id": "drying_mill",
-      "model_type": "drying_mill_v1",
+      "model_type": "vertical_raw_mill_v1",
       "parameters": {
         "capacity_tph": 210,
         "target_moisture_fraction": 0.005,
         "evaporation_capacity_tph": 5,
         "heat_availability_fraction": 1,
-        "reference_airflow_m3_s": 80
+        "reference_airflow_m3_s": 80,
+        "motor_current_a": 320,
+        "grinding_pressure_bar": 105,
+        "vibration_trip_delay_s": 30
       }
     },
     {
       "id": "separator",
-      "model_type": "bulk_separator_v1",
+      "model_type": "rotor_separator_v1",
       "parameters": {
         "capacity_tph": 205,
-        "fines_fraction": 0.55
+        "fines_fraction": 0.55,
+        "rotor_speed_rpm": 140
       }
     },
     {
       "id": "process_fan",
-      "model_type": "process_fan_v1",
+      "model_type": "monitored_process_fan_v1",
       "parameters": {
-        "airflow_m3_s": 80
+        "airflow_m3_s": 80,
+        "fan_speed_rpm": 990,
+        "bearing_temperature_c": 58,
+        "bearing_trip_c": 90
       }
     },
     {

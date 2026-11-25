@@ -30,6 +30,8 @@ Mở [Explorer tại localhost](http://127.0.0.1:8000/) và chọn một thiết
 
 Các kịch bản dùng chung `configs/operating_profiles/zone1_operation.json` để cấu hình dao động quá trình và sai số đo. Explorer đọc số đo giả lập từ `measurements`, gồm cả các kênh component, cùng các trạng thái và cảnh báo của bộ điều khiển. API vận hành trực tiếp chỉ gửi các trường này và thời điểm lấy mẫu. Kết quả mô phỏng theo kịch bản vẫn chứa giá trị vật lý trong `equipment` để kiểm tra mô hình. Nếu bỏ `operating_profile`, simulator dùng tham số quá trình danh định.
 
+Ở Z01–L02, WF-201 điều khiển một dòng phối liệu tổng dựa trên số đo load cell. Lỗi con lăn thay đổi năng lực nghiền; lỗi tốc độ rotor SP-201 thay đổi tỷ lệ phân ly và hồi lưu. Mô hình chưa dự báo phân bố kích thước hạt. Mất tín hiệu rung RM-201 chỉ ảnh hưởng kênh giám sát vì kịch bản sử dụng một kênh bảo vệ rung độc lập. Khi khí sấy giảm, mô hình giới hạn cấp liệu để giữ mục tiêu độ ẩm. SL-301 tiếp tục cấp cho KF-301 theo lượng tồn khả dụng.
+
 ## Phạm vi mô hình
 
 Tuyến mẫu `bulk_material_line.json` dùng bước tính 60 s và thông số giả định. Khi `downstream_feeder` ngừng nhận, `product_silo` tích lũy và giới hạn dòng từ công đoạn trước khi đầy. Khi công đoạn trước giảm sản lượng, silo tiếp tục cấp liệu trong phạm vi tồn kho khả dụng. `transfer_conveyor` biểu diễn vật liệu đang vận chuyển với độ trễ một bước.

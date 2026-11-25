@@ -6,7 +6,11 @@ from pathlib import Path
 
 from factory_sim.equipment import IMPLEMENTATIONS
 from factory_sim.bulk_components import BULK_COMPONENT_MODELS
+from factory_sim.milling_components import MILLING_COMPONENT_MODELS
 from factory_sim.crusher import FAULTS as CRUSHER_FAULTS
+
+
+COMPONENT_MODELS = {**BULK_COMPONENT_MODELS, **MILLING_COMPONENT_MODELS}
 
 
 def read_json(path):
@@ -26,7 +30,7 @@ def load_plant(model_directory, path):
         if model["id"] in models or model["implementation"] not in IMPLEMENTATIONS:
             raise ValueError(f"Invalid model registration: {model['id']}")
         component_model = model.get("component_model")
-        if component_model is not None and component_model not in BULK_COMPONENT_MODELS:
+        if component_model is not None and component_model not in COMPONENT_MODELS:
             raise ValueError(f"Unknown component model: {component_model}")
         models[model["id"]] = model
     plant = read_json(path)
@@ -73,7 +77,7 @@ def load_scenario(path, assets):
         if "." in parameter:
             component, fault = parameter.split(".", 1)
             model = assets[key]["model"]
-            runtime = BULK_COMPONENT_MODELS.get(model.get("component_model"))
+            runtime = COMPONENT_MODELS.get(model.get("component_model"))
             catalog = runtime.FAULTS if runtime else (
                 CRUSHER_FAULTS if model["implementation"] == "rotor_crusher" else {})
             if fault not in catalog.get(component, ()):

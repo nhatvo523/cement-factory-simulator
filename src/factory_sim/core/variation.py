@@ -45,6 +45,7 @@ COMPONENT_ANALOG_SIGNALS = {
     "position_m": {"relative_amplitude": 0.001, "period_s": 181},
     "travel_speed_m_min": {"relative_amplitude": 0.004, "period_s": 207},
     "speed_fraction": {"relative_amplitude": 0.004, "period_s": 165},
+    "opening_fraction": {"relative_amplitude": 0.003, "period_s": 165},
     "pressure_bar": {"relative_amplitude": 0.006, "period_s": 180},
     "vibration_mm_s": {"relative_amplitude": 0.01, "period_s": 135},
 }

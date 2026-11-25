@@ -8,6 +8,7 @@ from factory_sim.equipment import DryerMill, Fan, Material, Separator, Storage, 
 from factory_sim.core.variation import operating_values, sampled_components, sampled_values
 from factory_sim.crusher import RotorCrusher
 from factory_sim.bulk_components import BULK_COMPONENT_MODELS, Reclaimer
+from factory_sim.milling_components import MILLING_COMPONENT_MODELS
 
 
 def segments(plant, assets):
@@ -69,9 +70,13 @@ def simulate(plant, assets, scenario, live_events=None):
     crushers = {key: RotorCrusher(nominal[key]) for key, kind in kinds.items() if kind == "rotor_crusher"}
     bulk_components = {
         key: BULK_COMPONENT_MODELS[asset["model"]["component_model"]](nominal[key])
-        for key, asset in assets.items() if "component_model" in asset["model"]
+        for key, asset in assets.items() if asset["model"].get("component_model") in BULK_COMPONENT_MODELS
     }
-    component_models = {**crushers, **bulk_components}
+    milling_components = {
+        key: MILLING_COMPONENT_MODELS[asset["model"]["component_model"]](nominal[key])
+        for key, asset in assets.items() if asset["model"].get("component_model") in MILLING_COMPONENT_MODELS
+    }
+    component_models = {**crushers, **bulk_components, **milling_components}
     params = nominal
     profile = scenario.get("profile", {})
     seed = profile.get("seed", 0)
@@ -111,6 +116,8 @@ def simulate(plant, assets, scenario, live_events=None):
         for key, runtime in bulk_components.items():
             if kinds[key] == "throughput":
                 params[key] = {**params[key], "capacity_tph": runtime.capacity(params[key], start)}
+        for key, runtime in milling_components.items():
+            params[key] = runtime.apply(params[key], start)
         opening_total = sum_materials(stocks.values())
         inflow = {key: Material() for key in stocks}
         outflow = {key: Material() for key in stocks}
@@ -240,6 +247,13 @@ def simulate(plant, assets, scenario, live_events=None):
                     and (receiving_model is None or receiving_model.accepts_inlet(start)),
                 }
             runtime.telemetry(data[key], measured.get(key, {}), start, f"{seed}:{key}", **route_status)
+        for key, runtime in milling_components.items():
+            runtime.telemetry(data[key], measured.get(key, {}), start, f"{seed}:{key}")
+            if kinds[key] == "dryer_mill":
+                if params[routes[key]]["capacity_tph"] == 0:
+                    data[key]["process_notice"] = "mill_separator_unavailable"
+                elif data[fans[key]]["airflow_m3_s"] < 0.7 * params[key]["reference_airflow_m3_s"]:
+                    data[key]["process_notice"] = "mill_low_airflow"
         for key in component_models:
             components = sampled_components(data[key]["components"], f"{seed}:{key}:sensor", start + step)
             measured.setdefault(key, {})["components"] = components
