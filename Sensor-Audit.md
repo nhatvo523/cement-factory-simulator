@@ -21,6 +21,23 @@ Mốc khảo sát là `f1bc06b`. Bảng bao phủ 33 equipment, 4 zone và 7 lin
 
 Hiện công bố 147 tag (Z01: 52, Z02: 33, Z03: 34, Z04: 28). Trong 181 cặp thiết bị/trường đo cũ, 92 tên trường không còn công bố theo dạng cũ, gồm các trường đã loại và trường đã đổi điểm đo. Ngoài số này, toàn bộ bản sao trạng thái vật lý từng thiết bị đã rời payload mặc định. Hai bảng và phụ lục bên dưới giữ nguyên mốc Bước 0 để đối chiếu.
 
+## Bước 2 — Z02, Pha A
+
+Z02 tăng từ **33 lên 47 tag**. Bổ sung 14 tag và bổ sung metadata hoặc hành vi cho 8 tag có sẵn. Các zone khác giữ nguyên. Mọi tag trong bảng này có `assumed: true`. Giá trị bình thường, dải và ngưỡng dành cho mô phỏng. `null` đánh dấu ngưỡng không áp dụng. Ngưỡng chỉ là metadata, chưa phát lệnh trip và không đi vào liên động.
+
+| Thiết bị | Tag mới | Kênh có sẵn được cập nhật hoặc giữ | Cơ sở suy ra |
+|---|---|---|---|
+| PH-301 | 8 tag nhiệt khí và áp suất gauge của tầng 1–4, đánh số từ dưới lên | Nhiệt đầu ra có quán tính 180 s | Giả định bốn tầng. Nhiệt mục tiêu qua từng tầng là 800/670/510/340 °C ở tải nhiệt tham chiếu. Độ lớn áp suất âm tăng về phía đầu hút ở trên, tỷ lệ bình phương lưu lượng khí CF-301. |
+| PC-301 | Nhiệt gió ba | Dùng nhiệt đầu ra solver làm đại diện nhiệt khí đầu ra. Hằng số thời gian 210 s cho đầu ra và 150 s cho gió ba. | Gió ba suy từ công suất nhiệt thu hồi của CL-301 với hệ số cấu hình. Chưa có cân bằng năng lượng riêng cho ống gió ba. |
+| KL-301 | Dòng truyền động và nhiệt khí tại cửa vào liệu lò | — | Dòng có thành phần không tải khi quay và tăng theo lưu lượng liệu. Nhiệt khí là biến đại diện theo tải và gió, với hằng số thời gian 240 s. |
+| CL-301 | Áp suất dưới ghi | Tốc độ ghi giữ theo phản hồi hiện có. Nhiệt clinker đầu ra thêm hiệu chỉnh theo tải và quán tính 120 s. | Áp suất dưới ghi có thành phần do dòng gió và thành phần trở lực lớp clinker. Nhiệt clinker kết hợp biến cooler hiện có với tải liệu. |
+| CF-301 | Dòng truyền động quạt | Gauge cửa hút giữ dấu âm. Nhiệt ổ trục dùng biến đã có, thêm bộ lọc chỉ thị 20 s. | Dòng theo xấp xỉ bậc ba lưu lượng, về 0 khi quạt dừng. |
+| KF-301 | Dòng điện truyền động cân định lượng | Lưu lượng cân và RUN giữ các tag hiện hữu. | Dòng điện theo tải cân, về 0 khi truyền động ngừng. |
+
+Tín hiệu nhiệt khởi tạo theo giá trị mục tiêu của frame đầu tiên. Sau đó dùng bộ lọc bậc một theo thời gian bước thực. Các tín hiệu điện, áp suất và RUN/TRIP phản ứng ngay trong bước solver. Khi kẹt ghi hoặc dừng cân mà CF-301 vẫn chạy, áp suất các tầng vẫn còn và nhiệt cyclone có thể giảm từ bước kế tiếp do tín hiệu nhiệt lò dùng tải bước trước. Khi không còn clinker ra, kênh nhiệt CL-301 biểu diễn nhiệt dư của điểm đo đang nguội dần.
+
+Điểm cần duyệt trước Pha B gồm số tầng/vị trí lắp đầu đo, hệ số và hằng số thời gian theo dữ liệu vận hành, phương pháp gắn nhiệt với chất lượng clinker và mức giảm khả năng sấy, cùng điều kiện chuyển tuyến khí thải trực tiếp khi RM-201 dừng. Cần chốt cả trường hợp khởi động lại và điều kiện quay về tuyến sấy.
+
 ## Bề mặt dữ liệu trước Bước 1
 
 | Bề mặt | Dữ liệu hiện có |

@@ -1486,6 +1486,14 @@ Payload mặc định chỉ công bố phép đo và bit RUN/TRIP theo danh mụ
 
 Giữ nguyên logic dòng vật liệu và liên động. Nhiệt độ khí vào/ra RM-201 và các điểm đo mới thuộc Bước 2. Bão hòa theo dải đo, quán tính và debounce theo loại tín hiệu thuộc bước hiệu chỉnh hành vi.
 
+### Z02 — Pha A, tín hiệu thụ động
+
+Z02 có 47 tag công bố. Các điểm mô phỏng bao gồm nhiệt khí/áp suất gauge tại bốn tầng PH-301, nhiệt đầu ra và gió ba PC-301, nhiệt khí tại cửa vào liệu và dòng truyền động KL-301, áp dưới ghi/tốc độ ghi/nhiệt clinker CL-301, dòng quạt/draft/nhiệt ổ trục CF-301, cùng dòng truyền động/lưu lượng cân/RUN của KF-301.
+
+Áp suất cyclone tính theo bình phương lưu lượng khí. Độ lớn độ hút tăng từ tầng dưới lên tầng trên. Nhiệt khí mục tiêu giảm dần theo chiều này. Dòng truyền động lò tăng theo tải liệu, áp dưới ghi phụ thuộc lưu lượng gió và tải lớp clinker, còn nhiệt clinker đầu ra phản ánh tải liệu và năng lực làm nguội. Tín hiệu nhiệt dùng bộ lọc bậc một theo thời gian bước, với `time_constant_s` khai báo theo tag và giá trị khởi tạo bằng mục tiêu ở frame đầu tiên. Các hệ số, số tầng, dải đo, giá trị bình thường và ngưỡng là giả định. Metadata ngưỡng không điều khiển liên động.
+
+Các phép suy ra chạy sau solver và chỉ tác động dữ liệu công bố. Việc dùng nhiệt để tác động chất lượng clinker, khả năng sấy RM-201 hoặc chuyển hướng khí thải thuộc Pha B sau khi duyệt. Chi tiết từng tag và giả định có trong [Sensor-Audit.md](Sensor-Audit.md).
+
 ## 4. Trạng thái triển khai
 
 Tài liệu là **đặc tả mô phỏng**, chưa phải bằng chứng hệ thống simulation đã chạy. Engineering Explorer HTML là công cụ duyệt kiến trúc; dữ liệu mô phỏng, phương trình đã hiệu chỉnh, điều khiển thời gian thực và kiểm thử end-to-end là các phần cần triển khai/kiểm chứng riêng.
