@@ -7,7 +7,21 @@ Mốc khảo sát là `f1bc06b`. Bảng bao phủ 33 equipment, 4 zone và 7 lin
 - **C** — Biến solver, chỉ số ước tính hoặc chẩn đoán tổng hợp. Giữ nội bộ. Trạng thái PLC, mã trip và chất lượng tín hiệu được xem xét riêng, bên dưới.
 - **D** — Kênh cần bổ sung trên equipment hiện có. Các hạng mục tùy cấu hình nhà máy được đánh dấu rõ.
 
-## Bề mặt dữ liệu hiện tại
+## Trạng thái sau Bước 1
+
+| Hạng mục đã duyệt | Kết quả |
+|---|---|
+| A/B/C · Danh mục công bố | Một danh mục tại `configs/operating_profiles/equipment_tags.json`. API và export mặc định chỉ trả các tag trong danh mục. Explorer dùng nhãn, đơn vị và cờ hiển thị từ danh mục. |
+| A/B · CF-301 | Chuyển magnitude draft hiện có sang áp suất gauge có dấu tại cửa hút, đơn vị Pa. Quạt dừng trả 0 theo mô hình hiện tại. |
+| B · PK-501 | Công bố bộ đếm nguyên mô phỏng qua các mốc hoàn tất bao, và chênh bộ đếm trong cửa sổ tối đa 60 giây. Mốc hoàn tất được suy từ khối lượng đang đóng và khối lượng danh định mỗi bao. Kết quả không phản hồi về solver. |
+| C/D · RM-201 | Giữ hệ số nhiệt khả dụng trong solver. Nhiệt độ khí vào và ra chưa có nguồn đo phù hợp, chuyển sang Bước 2. |
+| B/C · SL-401 | Phương án A. Hai ô A/B có tag mức riêng theo % chiều cao quy ước. Mô hình hiện dùng quan hệ tuyến tính với phần khối lượng của từng ô sau lấy mẫu và giới hạn mức trong miền 0–100%. Tồn theo mác và tồn tổng tấn giữ nội bộ. |
+| C · Trạng thái và sự kiện | RUN/TRIP là tag riêng từ trạng thái thiết bị. Lý do trip, sự kiện chèn lỗi, tình trạng solver và cân bằng vật chất chỉ có trong `ground_truth` khi bật rõ ràng. |
+| D · Hạng mục chuyển tiếp | Giữ toàn bộ đề xuất bổ sung điểm đo ở cột D cho Bước 2. Dải tag Bước 1 là dải cấu hình giả định. Hiệu chuẩn theo OEM, bão hòa, độ trễ và đáp ứng tín hiệu thuộc các bước sau. |
+
+Hiện công bố 147 tag (Z01: 52, Z02: 33, Z03: 34, Z04: 28). Trong 181 cặp thiết bị/trường đo cũ, 92 tên trường không còn công bố theo dạng cũ, gồm các trường đã loại và trường đã đổi điểm đo. Ngoài số này, toàn bộ bản sao trạng thái vật lý từng thiết bị đã rời payload mặc định. Hai bảng và phụ lục bên dưới giữ nguyên mốc Bước 0 để đối chiếu.
+
+## Bề mặt dữ liệu trước Bước 1
 
 | Bề mặt | Dữ liệu hiện có |
 |---|---|

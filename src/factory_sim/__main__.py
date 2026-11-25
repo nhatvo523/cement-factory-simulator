@@ -13,9 +13,10 @@ def main():
     parser.add_argument("--plant", type=Path, default=Path("configs/plants/bulk_material_line.json"))
     parser.add_argument("--models", type=Path, default=Path("configs/model_types"))
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--ground-truth", action=argparse.BooleanOptionalAction, default=None)
     args = parser.parse_args()
     try:
-        result = build_result(args.models, args.plant, args.scenario)
+        result = build_result(args.models, args.plant, args.scenario, ground_truth=args.ground_truth)
     except (OSError, KeyError, ValueError, RuntimeError) as error:
         parser.exit(1, f"Simulation failed: {error}\n")
     args.output.parent.mkdir(parents=True, exist_ok=True)

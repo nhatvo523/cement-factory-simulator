@@ -1478,6 +1478,14 @@ Ví dụ: RM-201 vẫn đang chạy, có cảnh báo rung cao và bị giới h�
 **Ngoài phạm vi đã xác nhận:** mô phỏng khai thác mỏ, toàn bộ utilities, P&ID/OEM chi tiết và mô hình động học cấp cao chưa hiệu chỉnh. Không diễn giải các thông số giả định thành thông số nhà máy thật.
 ---
 
+## Tín hiệu sensor của equipment — Bước 1
+
+Danh mục tag nằm ở `configs/operating_profiles/equipment_tags.json`. API live, API kịch bản, JSON export và Explorer dùng chung mã tag, mã thiết bị, đơn vị, dải đo, nguồn và cờ hiển thị. Các dải đo là giả định cấu hình cho simulator. Danh sách và giải thích từng nhóm thiết bị có trong [Sensor-Audit.md](Sensor-Audit.md).
+
+Payload mặc định chỉ công bố phép đo và bit RUN/TRIP theo danh mục. Biến vật lý, tồn theo mác, chỉ số nhiệt khả dụng, cân bằng vật chất, lý do trip và sự kiện lỗi thuộc `ground_truth` tùy chọn. Mức SL-401 được công bố theo hai ô A/B, với quan hệ mức–khối lượng tuyến tính trong mô hình hiện tại. Draft CF-301 dùng Pa gauge có dấu. PK-501 công bố bộ đếm số bao hoàn tất mô phỏng và số bao đếm được trong cửa sổ tối đa 60 giây.
+
+Giữ nguyên logic dòng vật liệu và liên động. Nhiệt độ khí vào/ra RM-201 và các điểm đo mới thuộc Bước 2. Bão hòa theo dải đo, quán tính và debounce theo loại tín hiệu thuộc bước hiệu chỉnh hành vi.
+
 ## 4. Trạng thái triển khai
 
 Tài liệu là **đặc tả mô phỏng**, chưa phải bằng chứng hệ thống simulation đã chạy. Engineering Explorer HTML là công cụ duyệt kiến trúc; dữ liệu mô phỏng, phương trình đã hiệu chỉnh, điều khiển thời gian thực và kiểm thử end-to-end là các phần cần triển khai/kiểm chứng riêng.

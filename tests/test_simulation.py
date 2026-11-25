@@ -6,11 +6,23 @@ from unittest.mock import patch
 
 from factory_sim.core.config import load_plant, load_scenario
 from factory_sim.core.engine import simulate
-from factory_sim.server import ExplorerHandler, LiveOperation, live_sensor_frame
+from factory_sim.core.results import solve_result
+from factory_sim.server import CONFIGS, ExplorerHandler, LiveOperation
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = ROOT / "configs" / "model_types"
+
+
+def read_solver(operation, faults):
+    operation.read(faults)
+    return operation.frame
+
+
+def solve_operation(handler, query):
+    result, _, _ = solve_result(MODELS, CONFIGS / "plants/bulk_material_line.json",
+                                CONFIGS / "scenarios/baseline.json", handler.fault_schedule(query))
+    return result
 
 
 class SimulationTest(unittest.TestCase):
@@ -69,8 +81,8 @@ class SimulationTest(unittest.TestCase):
     def test_crusher_combines_component_faults_and_latches_trip(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
         faults = ["crusher_rotor_jam@600", "crusher_vibration_signal_loss@600"]
-        frames = handler.operation({"fault": faults})["frames"]
-        reversed_frames = handler.operation({"fault": faults[::-1]})["frames"]
+        frames = solve_operation(handler, {"fault": faults})["frames"]
+        reversed_frames = solve_operation(handler, {"fault": faults[::-1]})["frames"]
         normal, jam, tripped = (frames[i]["equipment"]["crusher"] for i in (9, 10, 11))
         self.assertGreater(jam["components"]["main_motor"]["current_a"],
                            normal["components"]["main_motor"]["current_a"])
@@ -88,8 +100,8 @@ class SimulationTest(unittest.TestCase):
 
     def test_crusher_sensor_loss_preserves_physical_flow(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        normal = handler.operation({})["frames"][10]["equipment"]["crusher"]
-        faulty = handler.operation({"fault": ["crusher_vibration_signal_loss@600"]})["frames"][10]["equipment"]["crusher"]
+        normal = solve_operation(handler, {})["frames"][10]["equipment"]["crusher"]
+        faulty = solve_operation(handler, {"fault": ["crusher_vibration_signal_loss@600"]})["frames"][10]["equipment"]["crusher"]
         self.assertEqual(faulty["outlet_tph"], normal["outlet_tph"])
         self.assertEqual(faulty["operating_state"], "RUNNING")
         self.assertEqual(faulty["components"]["vibration_sensor"]["signal_quality"], "BAD")
@@ -97,15 +109,15 @@ class SimulationTest(unittest.TestCase):
     def test_live_operation_uses_elapsed_seconds_and_continues_past_ninety_minutes(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
             operation = LiveOperation()
-            self.assertEqual(operation.read([])["frame"]["time_s"], 1)
+            self.assertEqual(read_solver(operation, [])["time_s"], 1)
             clock.return_value += 1
-            self.assertEqual(operation.read(["crusher_rotor_jam"])["frame"]["time_s"], 2)
+            self.assertEqual(read_solver(operation, ["crusher_rotor_jam"])["time_s"], 2)
             clock.return_value += 1
-            jam = operation.read([])["frame"]
+            jam = read_solver(operation, [])
             self.assertEqual(jam["time_s"], 3)
             self.assertGreater(jam["equipment"]["crusher"]["outlet_tph"], 0)
             clock.return_value = 5501
-            continued = operation.read([])["frame"]
+            continued = read_solver(operation, [])
             self.assertEqual(continued["time_s"], 5402)
             self.assertEqual(continued["equipment"]["crusher"]["operating_state"], "TRIPPED")
             self.assertEqual(continued["equipment"]["crusher"]["outlet_tph"], 0)
@@ -116,15 +128,15 @@ class SimulationTest(unittest.TestCase):
             faulty = LiveOperation()
             faulty.read(["conveyor_scale_signal_loss", "feed_bin_level_signal_loss"])
             clock.return_value = 101
-            reference = normal.read([])["frame"]
-            actual = faulty.read(["stockpile_level_false_high"])["frame"]
+            reference = read_solver(normal, [])
+            actual = read_solver(faulty, ["stockpile_level_false_high"])
             for asset in ("transfer_conveyor", "feed_bin"):
                 self.assertEqual(actual["equipment"][asset]["outlet_tph"],
                                  reference["equipment"][asset]["outlet_tph"])
             self.assertIsNone(actual["measurements"]["transfer_conveyor"]["outlet_tph"])
             self.assertIsNone(actual["measurements"]["feed_bin"]["level_fraction"])
             clock.return_value = 102
-            frame = faulty.read([])["frame"]
+            frame = read_solver(faulty, [])
             stockpile = frame["equipment"]["stockpile"]
             self.assertEqual(stockpile["inlet_tph"], 0)
             self.assertGreater(stockpile["outlet_tph"], 0)
@@ -135,25 +147,18 @@ class SimulationTest(unittest.TestCase):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
             operation = LiveOperation()
             physical = operation.frame["equipment"]
-            scada = live_sensor_frame(operation.frame)
-            readings = scada["measurements"]
-            for asset in ("crusher", "transfer_conveyor", "stockpile", "reclaimer", "feed_bin"):
-                self.assertIn("outlet_tph", readings[asset])
-                self.assertNotIn("outlet_tph", scada["equipment"][asset])
-                self.assertNotIn("components", scada["equipment"][asset])
-            self.assertNotEqual(readings["crusher"]["outlet_tph"], physical["crusher"]["outlet_tph"])
-            self.assertNotEqual(readings["crusher"]["components"]["rotor"]["speed_rpm"],
+            readings = operation.read([])["frame"]["measurements"]
+            self.assertNotEqual(readings["CR-101"]["CR-101.rotor.speed_rpm"],
                                 physical["crusher"]["components"]["rotor"]["speed_rpm"])
-            self.assertNotIn("tool_wear_fraction", readings["crusher"]["components"]["rotor"])
+            self.assertNotIn("CR-101.rotor.tool_wear_fraction", readings["CR-101"])
             operation.read(["conveyor_scale_signal_loss", "feed_bin_level_signal_loss",
                             "crusher_vibration_signal_loss", "stockpile_level_false_high"])
             clock.return_value += 1
-            readings = live_sensor_frame(operation.read([])["frame"])["measurements"]
-            self.assertIsNone(readings["transfer_conveyor"]["outlet_tph"])
-            self.assertIsNone(readings["feed_bin"]["level_fraction"])
-            self.assertIsNone(readings["crusher"]["components"]["vibration_sensor"]["vibration_mm_s"])
-            self.assertEqual(readings["stockpile"]["level_fraction"], 1)
-            self.assertLess(readings["stockpile"]["inventory_t"], 40)
+            readings = operation.read([])["frame"]["measurements"]
+            self.assertIsNone(readings["BC-101"]["BC-101.belt_scale.measured_flow_tph"])
+            self.assertIsNone(readings["BN-101"]["BN-101.level_sensor.measured_level_fraction"])
+            self.assertIsNone(readings["CR-101"]["CR-101.vibration_sensor.vibration_mm_s"])
+            self.assertEqual(readings["ST-101"]["ST-101.level_sensor.measured_level_fraction"], 100)
 
     def test_line_one_combined_faults_limit_the_right_material_paths(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
@@ -161,7 +166,7 @@ class SimulationTest(unittest.TestCase):
             operation.read(["conveyor_belt_slip", "conveyor_belt_misalignment",
                             "reclaimer_mechanism_jam", "feed_bin_outlet_bridging"])
             clock.return_value = 101
-            before_trip = operation.read([])["frame"]["equipment"]
+            before_trip = read_solver(operation, [])["equipment"]
             self.assertGreater(before_trip["feed_bin"]["inventory_t"], 0)
             self.assertEqual(before_trip["feed_bin"]["outlet_tph"], 0)
             self.assertEqual(before_trip["weigh_feeder"]["outlet_tph"], 0)
@@ -169,7 +174,7 @@ class SimulationTest(unittest.TestCase):
             self.assertAlmostEqual(before_trip["transfer_conveyor"]["outlet_tph"], 55)
             self.assertGreater(before_trip["reclaimer"]["outlet_tph"], 0)
             clock.return_value = 131
-            frame = operation.read([])["frame"]
+            frame = read_solver(operation, [])
             for asset in ("transfer_conveyor", "reclaimer"):
                 self.assertEqual(frame["equipment"][asset]["operating_state"], "TRIPPED")
                 self.assertEqual(frame["equipment"][asset]["outlet_tph"], 0)
@@ -184,7 +189,7 @@ class SimulationTest(unittest.TestCase):
             self.assertGreater(normal["components"]["scraper_chain"]["speed_m_s"], 0)
             operation.read(["reclaimer_harrow_encoder_loss"])
             clock.return_value = 101
-            frame = live_sensor_frame(operation.read([])["frame"])
+            frame = read_solver(operation, [])
             readings = frame["measurements"]["reclaimer"]
             self.assertIsNone(readings["components"]["harrow_encoder"]["position_m"])
             self.assertEqual(readings["components"]["harrow_travel"]["end_limit"], "NORMAL")
@@ -192,7 +197,7 @@ class SimulationTest(unittest.TestCase):
             self.assertEqual(frame["equipment"]["reclaimer"]["operating_state"], "RUNNING")
             operation.read(["feed_bin_outlet_bridging"])
             clock.return_value = 1400
-            frame = live_sensor_frame(operation.read([])["frame"])
+            frame = read_solver(operation, [])
             self.assertEqual(frame["equipment"]["reclaimer"]["waiting_reason"], "reclaimer_discharge_unavailable")
             self.assertEqual(frame["measurements"]["reclaimer"]["outlet_tph"], 0)
 
@@ -201,13 +206,13 @@ class SimulationTest(unittest.TestCase):
             operation = LiveOperation()
             operation.read(["reclaimer_bridge_stall"])
             clock.return_value = 101
-            frame = operation.read([])["frame"]
+            frame = read_solver(operation, [])
             reclaimer = frame["equipment"]["reclaimer"]
             self.assertEqual(reclaimer["components"]["bridge_travel"]["travel_speed_m_min"], 0)
             self.assertEqual(reclaimer["outlet_tph"], 0)
             self.assertIsNone(reclaimer["trip_reason"])
             clock.return_value = 111
-            reclaimer = operation.read([])["frame"]["equipment"]["reclaimer"]
+            reclaimer = read_solver(operation, [])["equipment"]["reclaimer"]
             self.assertEqual(reclaimer["operating_state"], "TRIPPED")
             self.assertEqual(reclaimer["trip_reason"], "reclaimer_travel_stall")
 
@@ -252,23 +257,23 @@ class SimulationTest(unittest.TestCase):
 
     def test_weigh_feeder_bias_changes_measurement_and_physical_feed(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        baseline = handler.operation({})["frames"][10]
-        frame = handler.operation({"fault": ["feeder_scale_bias@600"]})["frames"][10]
+        baseline = solve_operation(handler, {})["frames"][10]
+        frame = solve_operation(handler, {"fault": ["feeder_scale_bias@600"]})["frames"][10]
         physical = frame["equipment"]["weigh_feeder"]["outlet_tph"]
         reported = frame["measurements"]["weigh_feeder"]["outlet_tph"]
         self.assertLess(physical, baseline["equipment"]["weigh_feeder"]["outlet_tph"])
         self.assertGreater(reported, physical * 1.2)
-        result = handler.operation({"fault": ["feeder_scale_loss@600", "feeder_scale_bias@600"]})["frames"][10]
+        result = solve_operation(handler, {"fault": ["feeder_scale_loss@600", "feeder_scale_bias@600"]})["frames"][10]
         self.assertIsNone(result["measurements"]["weigh_feeder"]["outlet_tph"])
         self.assertEqual(result["equipment"]["weigh_feeder"]["outlet_tph"], 0)
 
     def test_separator_component_faults_affect_recycle_and_interlock_mill(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        baseline = handler.operation({})["frames"][10]["equipment"]
-        slow = handler.operation({"fault": ["separator_underspeed@600"]})["frames"][10]["equipment"]
+        baseline = solve_operation(handler, {})["frames"][10]["equipment"]
+        slow = solve_operation(handler, {"fault": ["separator_underspeed@600"]})["frames"][10]["equipment"]
         self.assertLess(slow["separator"]["recycle_tph"], baseline["separator"]["recycle_tph"])
         self.assertAlmostEqual(slow["separator"]["recycle_tph"], slow["drying_mill"]["recycle_tph"])
-        frame = handler.operation({"fault": ["separator_drive_trip@600"]})["frames"][10]
+        frame = solve_operation(handler, {"fault": ["separator_drive_trip@600"]})["frames"][10]
         self.assertEqual(frame["equipment"]["separator"]["operating_state"], "TRIPPED")
         self.assertEqual(frame["equipment"]["drying_mill"]["fresh_inlet_tph"], 0)
         self.assertEqual(frame["equipment"]["drying_mill"]["process_notice"], "mill_separator_unavailable")
@@ -276,8 +281,8 @@ class SimulationTest(unittest.TestCase):
 
     def test_fan_impeller_fault_reduces_silo_input_before_kiln_feed(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        baseline = handler.operation({})["frames"][10]["equipment"]
-        frame = handler.operation({"fault": ["fan_impeller_degradation@600"]})["frames"][10]
+        baseline = solve_operation(handler, {})["frames"][10]["equipment"]
+        frame = solve_operation(handler, {"fault": ["fan_impeller_degradation@600"]})["frames"][10]
         equipment = frame["equipment"]
         self.assertEqual(equipment["process_fan"]["active_faults"][0]["component"], "impeller")
         self.assertEqual(equipment["drying_mill"]["process_notice"], "mill_low_airflow")
@@ -287,7 +292,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_kiln_line_accounts_for_calcination_and_recovers_cooler_heat(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        frame = handler.operation({})["frames"][10]
+        frame = solve_operation(handler, {})["frames"][10]
         stages = frame["equipment"]
         self.assertAlmostEqual(stages["precalciner"]["outlet_tph"], stages["rotary_kiln"]["inlet_tph"])
         self.assertAlmostEqual(stages["clinker_cooler"]["outlet_tph"], stages["clinker_silo"]["inlet_tph"])
@@ -299,7 +304,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_id_fan_trip_blocks_kiln_feed_with_raw_meal_still_in_silo(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        frame = handler.operation({"fault": ["kiln_id_fan_trip@600"]})["frames"][10]
+        frame = solve_operation(handler, {"fault": ["kiln_id_fan_trip@600"]})["frames"][10]
         stages = frame["equipment"]
         self.assertEqual(stages["kiln_id_fan"]["operating_state"], "TRIPPED")
         self.assertEqual(stages["preheater"]["process_notice"], "kiln_low_draft")
@@ -310,8 +315,8 @@ class SimulationTest(unittest.TestCase):
 
     def test_cooler_derate_and_silo_outlet_blockage_affect_different_flows(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        normal = handler.operation({})["frames"][10]["equipment"]
-        frame = handler.operation({"fault": ["cooler_airflow_loss@600",
+        normal = solve_operation(handler, {})["frames"][10]["equipment"]
+        frame = solve_operation(handler, {"fault": ["cooler_airflow_loss@600",
                                              "clinker_silo_outlet_blockage@600"]})["frames"][10]
         stages = frame["equipment"]
         cooler = stages["clinker_cooler"]
@@ -324,9 +329,9 @@ class SimulationTest(unittest.TestCase):
 
     def test_kiln_heat_loss_propagates_to_preheater_and_raw_mill(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        baseline = handler.operation({})["frames"][11]["equipment"]
-        trip = handler.operation({"fault": ["kiln_drive_trip@600"]})["frames"][11]["equipment"]
-        derate = handler.operation({"fault": ["kiln_id_fan_derate@600"]})["frames"][11]["equipment"]
+        baseline = solve_operation(handler, {})["frames"][11]["equipment"]
+        trip = solve_operation(handler, {"fault": ["kiln_drive_trip@600"]})["frames"][11]["equipment"]
+        derate = solve_operation(handler, {"fault": ["kiln_id_fan_derate@600"]})["frames"][11]["equipment"]
         self.assertLess(trip["drying_mill"]["fresh_inlet_tph"], baseline["drying_mill"]["fresh_inlet_tph"])
         self.assertEqual(trip["drying_mill"]["process_notice"], "mill_kiln_heat_reduced")
         self.assertEqual(trip["drying_mill"]["components"]["mill_hot_gas"]["heat_fraction"], 0)
@@ -352,7 +357,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_cement_mill_trip_still_allows_dispatch_from_opening_inventory(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        frames = handler.operation({"fault": ["cement_mill_a_trip@600"]})["frames"]
+        frames = solve_operation(handler, {"fault": ["cement_mill_a_trip@600"]})["frames"]
         first = frames[10]["equipment"]
         self.assertEqual(first["CM-401A"]["operating_state"], "TRIPPED")
         self.assertEqual(first["SP-401A"]["outlet_tph"], 0)
@@ -362,7 +367,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_finish_mill_recycle_and_fan_fault_follow_connected_branch(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        frame = handler.operation({"fault": ["cement_fan_a_trip@600"]})["frames"][10]
+        frame = solve_operation(handler, {"fault": ["cement_fan_a_trip@600"]})["frames"][10]
         state = frame["equipment"]
         self.assertEqual(state["FN-401A"]["trip_reason"], "fan_drive_trip")
         self.assertEqual(state["SP-401A"]["outlet_tph"], 0)
@@ -376,7 +381,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_truck_exchange_stops_bulk_loading_at_target(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        frames = handler.operation({})["frames"]
+        frames = solve_operation(handler, {})["frames"]
         for previous, frame in zip(frames, frames[1:]):
             scale = frame["equipment"]["WS-502"]
             self.assertLessEqual(scale["truck_net_t"], 28 + 1e-9)
@@ -390,7 +395,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_stacked_dispatch_faults_separate_bad_readings_from_physical_state(self):
         handler = ExplorerHandler.__new__(ExplorerHandler)
-        frame = handler.operation({"fault": ["cement_silo_level_loss@600",
+        frame = solve_operation(handler, {"fault": ["cement_silo_level_loss@600",
                                              "truck_scale_signal_loss@600"]})["frames"][10]
         self.assertIsNone(frame["measurements"]["SL-401"]["inventory_t"])
         self.assertIsNone(frame["measurements"]["SL-401"]["grades"])

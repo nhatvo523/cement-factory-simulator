@@ -24,11 +24,13 @@ $env:PYTHONPATH = "src"
 python -m factory_sim.server
 ```
 
-Mở [Explorer tại localhost](http://127.0.0.1:8000/) và chọn một thiết bị để mở cửa sổ **Thông số vận hành**. Cột phải hiển thị hồ sơ kỹ thuật. Chế độ vận hành chạy liên tục theo thời gian thực, với một bước mô hình mỗi giây. Ngay dưới thông số, chọn một hoặc nhiều lỗi rồi bấm **Áp dụng lỗi đã chọn**. Lỗi bắt đầu ở bước kế tiếp và có hiệu lực đến khi **Đặt lại mô phỏng**. Có thể đóng cửa sổ hoặc mở thiết bị khác trong cùng phiên. Tệp HTML mở trực tiếp vẫn dùng được để tra cứu, còn dữ liệu Python cần mở qua máy chủ. Ánh xạ mã kỹ thuật sang ID mô phỏng nằm trong `simulationAssets` của `UI/Explorer.html`.
+Mở [Explorer tại localhost](http://127.0.0.1:8000/) và chọn một thiết bị để mở cửa sổ **Thông số vận hành**. Cột phải hiển thị hồ sơ kỹ thuật. Chế độ vận hành chạy liên tục theo thời gian thực, với một bước mô hình mỗi giây. Ngay dưới thông số, chọn một hoặc nhiều lỗi rồi bấm **Áp dụng lỗi đã chọn**. Lỗi bắt đầu ở bước kế tiếp và có hiệu lực đến khi **Đặt lại mô phỏng**. Có thể đóng cửa sổ hoặc mở thiết bị khác trong cùng phiên. Tệp HTML mở trực tiếp vẫn dùng được để tra cứu, còn dữ liệu Python cần mở qua máy chủ. Ánh xạ mã thiết bị tới biến nguồn nằm trong danh mục tag.
 
-Đổi tên kịch bản thành `crusher_stop`, `fan_derate` hoặc `downstream_feed_stop` để sinh dữ liệu tương ứng. Các tệp JSON trong `runs/` có ID plant, ID kịch bản, đơn vị, sự kiện và chuỗi kết quả. Mốc thời gian của frame là cuối bước tính. Sự kiện được áp dụng từ đầu bước.
+Đổi tên kịch bản thành `crusher_stop`, `fan_derate` hoặc `downstream_feed_stop` để sinh dữ liệu tương ứng. Các tệp JSON trong `runs/` có ID plant, ID kịch bản, đơn vị, danh mục tag và chuỗi số đo. Mốc thời gian của frame là cuối bước tính. Sự kiện được áp dụng từ đầu bước.
 
-Các kịch bản dùng chung `configs/operating_profiles/zone1_operation.json` để cấu hình dao động quá trình và sai số đo. Explorer đọc số đo giả lập từ `measurements`, gồm cả các kênh component, cùng các trạng thái và cảnh báo của bộ điều khiển. API vận hành trực tiếp chỉ gửi các trường này và thời điểm lấy mẫu. Kết quả mô phỏng theo kịch bản vẫn chứa giá trị vật lý trong `equipment` để kiểm tra mô hình. Nếu bỏ `operating_profile`, simulator dùng tham số quá trình danh định.
+Các kịch bản dùng chung `configs/operating_profiles/zone1_operation.json` cho dao động quá trình và sai số đo. Danh mục công bố ở `configs/operating_profiles/equipment_tags.json` quy định mã tag, thiết bị, nhãn, đơn vị, dải, nguồn và cờ hiển thị. API live, API kịch bản, Explorer và CLI dùng cùng danh mục. Payload mặc định có số đo theo `measurements[device_id][tag_id]`, với metadata trong `tags`.
+
+Chẩn đoán có thể bật bằng `?ground_truth=true` trên API GET, `"ground_truth": true` trong body API live, hoặc `--ground-truth` khi export bằng CLI. Kênh này chứa trạng thái vật lý, cân bằng và sự kiện. Giá trị mặc định nằm trong danh mục tag và được đặt là `false`.
 
 Ở Z01–L02, WF-201 điều khiển một dòng phối liệu tổng dựa trên số đo load cell. Lỗi con lăn thay đổi năng lực nghiền; lỗi tốc độ rotor SP-201 thay đổi tỷ lệ phân ly và hồi lưu. Mô hình chưa dự báo phân bố kích thước hạt. Mất tín hiệu rung RM-201 chỉ ảnh hưởng kênh giám sát vì kịch bản sử dụng một kênh bảo vệ rung độc lập. Khi khí sấy giảm, mô hình giới hạn cấp liệu để giữ mục tiêu độ ẩm. SL-301 tiếp tục cấp cho KF-301 theo lượng tồn khả dụng.
 
@@ -48,4 +50,4 @@ Tuyến mẫu `bulk_material_line.json` dùng bước tính 60 s và thông số
 
 Để dùng lại model cho dự án khác, tạo cấu hình plant với ID, thông số và kết nối riêng, rồi truyền `--plant` khi chạy. `model_type` tham chiếu đến khai báo dùng chung trong `configs/model_types/`. Mục `target` trong kịch bản dùng ID của thiết bị trong plant đã chọn.
 
-Các dòng được phân bổ theo tồn kho đầu bước, rồi cam kết đồng thời. Sấy bảo toàn chất rắn khô và hạch toán hơi nước. Phân ly dùng tỷ lệ hạt mịn và vòng hồi lưu cục bộ trong mỗi bước. Kết quả lưu giá trị vật lý và số đo giả lập. Các vòng PID đầy đủ, thời gian lưu trong lò, động học cháy, và CO₂ từ nhiên liệu nằm ngoài phạm vi mô hình hiện tại.
+Các dòng được phân bổ theo tồn kho đầu bước, rồi cam kết đồng thời. Sấy bảo toàn chất rắn khô và hạch toán hơi nước. Phân ly dùng tỷ lệ hạt mịn và vòng hồi lưu cục bộ trong mỗi bước. Export mặc định lưu số đo giả lập. Có thể bật chẩn đoán khi cần giá trị vật lý. Các vòng PID đầy đủ, thời gian lưu trong lò, động học cháy, và CO₂ từ nhiên liệu nằm ngoài phạm vi mô hình hiện tại.

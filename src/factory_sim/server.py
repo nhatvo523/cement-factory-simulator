@@ -13,6 +13,7 @@ from uuid import uuid4
 from factory_sim.core.config import load_plant, load_scenario
 from factory_sim.core.engine import simulate
 from factory_sim.core.results import build_result
+from factory_sim.core.telemetry import load_tag_config, public_frames
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,40 +55,35 @@ class LiveOperation:
         )
         baseline = load_scenario(CONFIGS / "scenarios/baseline.json", self.assets)
         self.pending = []
-        self.frames = simulate({**plant, "step_s": 1}, self.assets, baseline, self.pending)
-        self.frame = next(self.frames)
+        self.tag_config = load_tag_config(CONFIGS / "model_types", self.assets)
+        raw_frames = simulate({**plant, "step_s": 1}, self.assets, baseline, self.pending)
+
+        def track_frames():
+            for frame in raw_frames:
+                self.frame = frame
+                yield frame
+
+        self.frames = public_frames(track_frames(), self.tag_config["tags"], plant, self.assets, True)
+        self.public_frame = next(self.frames)
         self.started = monotonic()
         self.faults = set()
         self.lock = Lock()
 
-    def read(self, faults):
+    def read(self, faults, ground_truth=None):
         with self.lock:
             target = int(monotonic() - self.started) + 1
             while self.frame["time_s"] < target:
-                self.frame = next(self.frames)
+                self.public_frame = next(self.frames)
             for name in faults:
                 if name not in self.faults:
                     scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", self.assets)
                     self.pending.extend(scenario["events"])
                     self.faults.add(name)
-            return {"frame": self.frame, "faults": sorted(self.faults)}
-
-
-def live_sensor_frame(frame):
-    """Send SCADA readings and controller status without solver truth values."""
-    state = {}
-    for key, values in frame["equipment"].items():
-        status_fields = ("operating_state", "trip_reason", "waiting_reason", "process_notice")
-        state[key] = {name: values[name] for name in status_fields if name in values}
-        if "active_faults" in values:
-            state[key]["active_faults"] = [
-                {"component": event["component"], "fault": event["fault"]} for event in values["active_faults"]
-            ]
-    return {
-        "time_s": frame["time_s"],
-        "measurements": frame["measurements"],
-        "equipment": state,
-    }
+            if ground_truth is None:
+                ground_truth = self.tag_config.get("ground_truth_default", False)
+            frame = {key: value for key, value in self.public_frame.items()
+                     if key != "ground_truth" or ground_truth}
+            return {"frame": frame, "tags": self.tag_config["tags"]}
 
 
 class ExplorerHandler(BaseHTTPRequestHandler):
@@ -106,22 +102,25 @@ class ExplorerHandler(BaseHTTPRequestHandler):
         content = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
         self.send_content(status, content, "application/json; charset=utf-8")
 
-    def simulation(self, scenario, faults=()):
+    def simulation(self, scenario, faults=(), ground_truth=None):
         return build_result(
             CONFIGS / "model_types", CONFIGS / "plants/bulk_material_line.json",
-            CONFIGS / "scenarios" / f"{scenario}.json", faults,
+            CONFIGS / "scenarios" / f"{scenario}.json", faults, ground_truth,
         )
 
-    def operation(self, query):
+    def fault_schedule(self, query):
         faults = {}
         for entry in query.get("fault", []):
             name, _, at_s = entry.partition("@")
             if name not in SCENARIOS[1:] or name in faults or not at_s.isascii() or not at_s.isdecimal():
                 raise ValueError("Invalid fault selection")
             faults[name] = int(at_s)
-        return self.simulation("baseline", [
+        return [
             (CONFIGS / "scenarios" / f"{name}.json", at_s) for name, at_s in faults.items()
-        ])
+        ]
+
+    def operation(self, query, ground_truth=None):
+        return self.simulation("baseline", self.fault_schedule(query), ground_truth)
 
     def do_POST(self):
         if self.path != "/api/live-operation":
@@ -135,7 +134,9 @@ class ExplorerHandler(BaseHTTPRequestHandler):
             session = request["session"]
             faults = request["faults"]
             reset = request["reset"]
+            ground_truth = request.get("ground_truth")
             if ((session is not None and not isinstance(session, str)) or type(reset) is not bool
+                    or (ground_truth is not None and type(ground_truth) is not bool)
                     or not isinstance(faults, list) or any(name not in SCENARIOS[1:] for name in faults)):
                 raise ValueError
         except (ValueError, TypeError, KeyError):
@@ -153,9 +154,8 @@ class ExplorerHandler(BaseHTTPRequestHandler):
                     self.live_sessions.popitem(last=False)
             else:
                 self.live_sessions.move_to_end(session)
-        result = operation.read(faults)
-        self.send_json(200, {"session": session, "faults": result["faults"],
-                             "frame": live_sensor_frame(result["frame"])})
+        result = operation.read(faults, ground_truth)
+        self.send_json(200, {"session": session, **result})
 
     def do_GET(self):
         url = urlsplit(self.path)
@@ -169,7 +169,12 @@ class ExplorerHandler(BaseHTTPRequestHandler):
                 self.send_json(400, {"error": "Unknown scenario"})
                 return
             try:
-                result = self.operation(query) if url.path == "/api/operation" else self.simulation(scenario)
+                flag = query.get("ground_truth", [])
+                if flag and flag not in (["true"], ["false"]):
+                    raise ValueError("Invalid ground_truth flag")
+                ground_truth = flag == ["true"] if flag else None
+                result = (self.operation(query, ground_truth) if url.path == "/api/operation"
+                          else self.simulation(scenario, ground_truth=ground_truth))
                 self.send_json(200, result)
             except ValueError:
                 self.send_json(400, {"error": "Invalid simulation parameters"})

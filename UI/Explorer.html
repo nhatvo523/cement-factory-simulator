@@ -860,65 +860,6 @@ const related = d => (d.equipment || []).map(id=>link(id,id+' · '+title(id)));
 const codeLink = id => link(id,id+' · '+title(id));
 const chosenFaults = d => linked('Sự cố liên quan',(d.faultIds || []).map(codeLink));
 const preserveLegacyControl = () => table(['Vòng điều khiển','Thiết bị','SP → PV','Permissive','Alarm / Trip'],legacy.CONTROLS);
-// Engineering Explorer asset IDs are independent of the reusable simulation models.
-const simulationAssets = {
-  'CR-101':'crusher','BC-101':'transfer_conveyor','ST-101':'stockpile',
-  'RC-101':'reclaimer','BN-101':'feed_bin','WF-201':'weigh_feeder',
-  'RM-201':'drying_mill','SP-201':'separator','FN-201':'process_fan',
-  'SL-301':'product_silo','KF-301':'downstream_feeder','PH-301':'preheater','PC-301':'precalciner',
-  'KL-301':'rotary_kiln','CL-301':'clinker_cooler','CF-301':'kiln_id_fan','SL-302':'clinker_silo',
-  ...Object.fromEntries(['WF-401A','CM-401A','SP-401A','FN-401A','WF-401B','CM-401B','SP-401B','FN-401B',
-    'SL-401','FD-501','PK-501','BC-501','LD-501','FD-502','SP-502','WS-502'].map(id=>[id,id]))
-};
-const operationComponents = {
-  main_motor:['Motor chính',{current_a:['Dòng điện','A'],winding_temperature_c:['Nhiệt độ cuộn dây','°C']}],
-  rotor:['Rotor và bộ phận đập',{speed_rpm:['Tốc độ','rpm']}],
-  drive_end_bearing:['Ổ trục đầu dẫn động',{temperature_c:['Nhiệt độ','°C']}],
-  non_drive_end_bearing:['Ổ trục đầu còn lại',{temperature_c:['Nhiệt độ','°C']}],
-  lubrication:['Hệ bôi trơn',{pressure_bar:['Áp suất dầu','bar']}],
-  vibration_sensor:['Cảm biến rung đầu dẫn động',{vibration_mm_s:['Độ rung RMS','mm/s'],signal_quality:['Chất lượng tín hiệu','']}],
-  belt:['Băng tải',{speed_m_s:['Tốc độ băng','m/s']}],
-  discharge_chute:['Máng xả',{condition:['Tình trạng','']}],
-  misalignment_switch:['Công tắc lệch băng',{condition:['Tín hiệu','']}],
-  belt_scale:['Cân băng',{signal_quality:['Chất lượng tín hiệu','']}],
-  level_sensor:['Cảm biến mức',{signal_quality:['Chất lượng tín hiệu','']}],
-  stacker_drive:['Truyền động máy rải',{speed_fraction:['Tốc độ tương đối','%']}],
-  scraper_chain:['Xích cào và motor kéo',{speed_m_s:['Tốc độ xích','m/s'],current_a:['Dòng motor kéo xích','A']}],
-  bridge_travel:['Cầu di chuyển',{position_m:['Vị trí dọc ray','m'],travel_speed_m_min:['Tốc độ di chuyển','m/min'],
-    direction:['Chiều di chuyển',''],end_limit:['Công tắc hành trình','']}],
-  harrow_travel:['Giàn cào mặt đống',{direction:['Chiều di chuyển',''],end_limit:['Công tắc hành trình','']}],
-  harrow_encoder:['Encoder giàn cào',{position_m:['Vị trí ngang','m'],travel_speed_m_min:['Tốc độ di chuyển','m/min'],
-    signal_quality:['Chất lượng tín hiệu','']}],
-  discharge_interlock:['Đường xả',{condition:['Sẵn sàng nhận liệu','']}],
-  outlet_chute:['Cửa xả phễu',{condition:['Tình trạng','']}],
-  feeder_drive:['Truyền động băng cân',{speed_m_s:['Tốc độ băng','m/s']}],
-  load_cell:['Load cell cân định lượng',{signal_quality:['Chất lượng tín hiệu','']}],
-  grinding_roller:['Con lăn nghiền',{}],
-  hydraulic_unit:['Cụm thủy lực',{pressure_bar:['Áp suất nghiền','bar']}],
-  mill_vibration_sensor:['Cảm biến rung máy nghiền',{vibration_mm_s:['Độ rung RMS','mm/s'],signal_quality:['Chất lượng tín hiệu','']}],
-  separator_drive:['Truyền động rotor phân ly',{speed_rpm:['Tốc độ rotor','rpm']}],
-  impeller:['Cánh quạt',{}],
-  damper:['Van điều tiết khí',{opening_fraction:['Độ mở đo','%']}],
-  fan_drive:['Truyền động quạt',{speed_rpm:['Tốc độ quạt','rpm']}],
-  fan_bearing:['Ổ trục quạt',{temperature_c:['Nhiệt độ','°C']}],
-  cyclone:['Cụm cyclone',{differential_pressure_pa:['Chênh áp cyclone','Pa']}],
-  preheater_outlet:['Đầu ra tháp tiền gia nhiệt',{temperature_c:['Nhiệt độ bột liệu','°C']}],
-  calciner_burner:['Vòi đốt tiền nung',{fuel_flow_tph:['Lưu lượng nhiên liệu','t/h']}],
-  calciner_outlet:['Đầu ra tiền nung',{temperature_c:['Nhiệt độ liệu','°C']}],
-  kiln_drive:['Truyền động lò',{speed_rpm:['Tốc độ quay lò','rpm']}],
-  main_burner:['Vòi đốt chính',{fuel_flow_tph:['Lưu lượng nhiên liệu','t/h']}],
-  burning_zone:['Vùng nung',{temperature_c:['Nhiệt độ vùng nung','°C']}],
-  cooler_fan:['Quạt làm nguội',{airflow_m3_s:['Lưu lượng khí làm nguội','m³/s']}],
-  grate_drive:['Truyền động ghi',{speed_m_s:['Tốc độ ghi','m/s']}],
-  cooler_outlet:['Đầu ra giàn nguội',{temperature_c:['Nhiệt độ clinker','°C']}],
-  cooler_heat_recovery:['Thu hồi nhiệt',{thermal_power_kw:['Công suất nhiệt ước tính','kW']}],
-  draft_sensor:['Điểm đo áp suất',{draft_suction_pa:['Độ lớn áp suất hút','Pa']}],
-  mill_hot_gas:['Nguồn khí nóng từ PH-301',{heat_fraction:['Nhiệt khả dụng tương đối','%']}],
-  preheater_exhaust_heat:['Nhánh khí nóng đến RM-201',{heat_fraction:['Nhiệt khả dụng tương đối','%']}],
-  outlet_gate:['Cửa xả',{}],
-  bearing:['Ổ trục máy nghiền',{vibration_mm_s:['Độ rung RMS','mm/s']}],
-  drive:['Truyền động',{current_a:['Dòng điện','A']}],filling_head:['Đầu nạp bao',{}],loading_spout:['Ống xuất rời',{}]
-};
 const equipmentFaults = {
   'WS-502':[["truck_scale_signal_loss","load_cell","unavailable","Mất tín hiệu cân"]],
   'FD-502':[["bulk_feeder_jam","feeder_drive","jam","Kẹt truyền động cấp liệu"]],
@@ -1013,66 +954,6 @@ const equipmentFaults = {
   'PK-501':[['bag_packer_jam','filling_head','unavailable','Kẹt đầu nạp bao']],
   'SP-502':[['bulk_loading_stop','loading_spout','unavailable','Ống xuất rời không sẵn sàng']]
 };
-const protectionLabels = {
-  motor_overcurrent:'Quá dòng motor',low_oil_pressure:'Áp suất dầu thấp',
-  motor_overtemperature:'Cuộn dây motor quá nhiệt',bearing_overtemperature:'Ổ trục đầu dẫn động quá nhiệt',
-  belt_misalignment:'Bảo vệ lệch băng',reclaimer_overload:'Quá tải xích cào',
-  reclaimer_travel_stall:'Cầu không di chuyển',
-  feeder_drive_jam:'Kẹt truyền động băng cân',feeder_scale_unavailable:'Mất tín hiệu load cell',
-  mill_low_hydraulic_pressure:'Áp suất nghiền thấp',mill_high_vibration:'Rung máy nghiền cao',
-  separator_drive_trip:'Trip truyền động rotor',fan_bearing_overtemperature:'Quá nhiệt ổ trục quạt',
-  calciner_fuel_unavailable:'Mất cấp nhiên liệu tiền nung',kiln_drive_trip:'Trip truyền động lò',
-  kiln_fuel_unavailable:'Mất cấp nhiên liệu vòi đốt chính',cooler_grate_jam:'Kẹt ghi làm nguội',
-  cooler_air_unavailable:'Mất khí làm nguội',kiln_id_fan_drive_trip:'Trip truyền động quạt hút'
-};
-const processNotices = {
-  mill_low_airflow:'Khí sấy thấp từ quạt nghiền liệu',
-  mill_separator_unavailable:'Máy phân ly chưa sẵn sàng',
-  kiln_low_draft:'Lực hút hệ nung thấp · Ngừng cấp bột liệu',
-  kiln_limited_draft:'Lực hút hệ nung giảm · Giới hạn cấp bột liệu',
-  mill_kiln_heat_reduced:'Nhiệt khí từ hệ nung giảm · Dùng nguồn nhiệt dự phòng'
-};
-const waitingLabels = {
-  truck_exchange:'Đang thay xe',
-  cement_compartment_full:'Ngăn silo đầy',
-  cement_compartment_empty:'Ngăn silo hết xi măng',
-  reclaimer_discharge_unavailable:'Phễu nhận chưa sẵn sàng',
-  reclaimer_stock_empty:'Kho nguồn không còn liệu'
-};
-const simulationMetrics = {
-  clinker_tph:['Clinker','t/h'],gypsum_tph:['Thạch cao','t/h'],additive_tph:['Phụ gia','t/h'],
-  truck_net_t:['Khối lượng xi măng trên xe','t'],
-  operating_state:['Trạng thái vận hành',''],
-  inlet_tph:['Lưu lượng vào','t/h'],outlet_tph:['Lưu lượng ra','t/h'],
-  fresh_inlet_tph:['Lưu lượng cấp mới','t/h'],recycle_tph:['Hồi lưu','t/h'],
-  evaporated_water_tph:['Nước bay hơi','t/h'],outlet_moisture_fraction:['Độ ẩm đầu ra','%'],
-  inventory_moisture_fraction:['Độ ẩm tồn kho','%'],inventory_t:['Tồn kho đo','t'],
-  belt_inventory_t:['Khối lượng liệu trên băng','t'],source_inventory_t:['Tồn kho nguồn ST-101','t'],
-  reclaimed_total_t:['Đã thu hồi trong phiên','t'],
-  belt_level_fraction:['Mức chứa trên băng','%'],belt_moisture_fraction:['Độ ẩm liệu trên băng','%'],
-  level_fraction:['Mức đo','%'],airflow_m3_s:['Lưu lượng khí','m³/s'],
-  bags_per_min:['Tốc độ đóng bao','bao/phút'],dispatch_flow_tph:['Tốc độ nạp xe suy từ cân','t/h'],
-  inlet_moisture_fraction:['Độ ẩm đầu vào','%']
-};
-const equipmentOverview = {
-  'CR-101':['operating_state','inlet_tph','outlet_tph','inlet_moisture_fraction'],
-  'BC-101':['operating_state','inlet_tph','outlet_tph','belt_inventory_t','belt_level_fraction','belt_moisture_fraction'],
-  'ST-101':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph','inventory_moisture_fraction'],
-  'RC-101':['operating_state','outlet_tph','reclaimed_total_t','source_inventory_t'],
-  'BN-101':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph','inventory_moisture_fraction'],
-  'WF-201':['operating_state','outlet_tph'],
-  'RM-201':['operating_state','fresh_inlet_tph','outlet_tph','outlet_moisture_fraction','recycle_tph'],
-  'SP-201':['operating_state','inlet_tph','outlet_tph','recycle_tph'],
-  'FN-201':['operating_state','airflow_m3_s'],
-  'SL-301':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph'],
-  'KF-301':['operating_state','outlet_tph'],
-  'PH-301':['operating_state','inlet_tph'],
-  'PC-301':['operating_state','outlet_tph'],
-  'KL-301':['operating_state','outlet_tph'],
-  'CL-301':['operating_state','outlet_tph'],
-  'CF-301':['operating_state','airflow_m3_s'],
-  'SL-302':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph']
-};
 const operationLabels = {
   RUNNING:'Đang chạy',STOPPED:'Đã dừng',TRIPPED:'Dừng do bảo vệ',IDLE:'Đang chờ',
   BLOCKED:'Tắc đường xả',INLET_BLOCKED:'Chặn nạp',OUTLET_BLOCKED:'Chặn xả',
@@ -1081,13 +962,13 @@ const operationLabels = {
   READY:'Sẵn sàng',NOT_READY:'Chưa sẵn sàng',FORWARD:'Tiến',REVERSE:'Lùi',STATIONARY:'Đứng yên',
   AT_START:'Đầu hành trình',AT_END:'Cuối hành trình'
 };
-const simulation = {asset:null,session:null,frame:null,faults:new Set(),loading:false,error:''};
+const simulation = {tags:[],asset:null,session:null,frame:null,faults:new Set(),loading:false,error:''};
 const simulationNumber = new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2});
 function simulationPanel() {
-  const available=Boolean(simulationAssets[simulation.asset]) && location.protocol!=='file:';
+  const available=record.get(simulation.asset)?.type==='Equipment' && location.protocol!=='file:';
   const assetFaults=equipmentFaults[simulation.asset];
   const faults=assetFaults
-    ? assetFaults.map(([key,component,,label])=>[key,(operationComponents[component]?.[0] || component)+' · '+label])
+    ? assetFaults.map(([key,,,label])=>[key,label])
     : [];
   return '<div id="simulation-panel" class="simulation-panel"><header data-operation-handle><div><h2 id="operation-title">Thông số vận hành</h2>'+
     '<p class="muted">'+esc(simulation.asset+' · '+title(simulation.asset))+'</p></div>'+
@@ -1146,10 +1027,6 @@ function setupOperationDrag(windowEl) {
 function showSimulationFrame() {
   const target=$('simulation-values');
   if (!target) return;
-  if (!simulationAssets[simulation.asset]) {
-    target.innerHTML=note('Thiết bị này chưa có dữ liệu mô phỏng.');
-    return;
-  }
   if (location.protocol==='file:') {
     target.innerHTML=note('Mở Explorer qua máy chủ Python để xem thông số vận hành.');
     return;
@@ -1159,51 +1036,19 @@ function showSimulationFrame() {
     target.textContent=simulation.error || 'Đang tải thông số vận hành…';
     return;
   }
-  const key=simulationAssets[simulation.asset];
-  const values=frame.equipment[key];
-  if (!values) {
+  const readings=frame.measurements[simulation.asset];
+  if (!readings) {
     target.innerHTML=note('Thiết bị chưa có dữ liệu trong lượt chạy này.');
     return;
   }
-  const {components={},grades,...readings}=frame.measurements[key] || {};
-  if (simulation.asset==='BC-101') {
-    readings.belt_inventory_t=readings.inventory_t;
-    readings.belt_level_fraction=readings.level_fraction;
-    readings.belt_moisture_fraction=readings.inventory_moisture_fraction;
-  }
-  if (simulation.asset==='RC-101') readings.source_inventory_t=frame.measurements.stockpile?.inventory_t;
-  const overview=equipmentOverview[simulation.asset];
-  const metrics=overview?Object.fromEntries(overview.map(key=>[key,simulationMetrics[key]])):simulationMetrics;
-  if (['WF-201','KF-301'].includes(simulation.asset)) metrics.outlet_tph=['Lưu lượng cân đo','t/h'];
-  if (simulation.asset==='RM-201') metrics.outlet_tph=['Lưu lượng sang phân ly','t/h'];
-  if (simulation.asset==='SP-201') metrics.outlet_tph=['Bột mịn sang silo','t/h'];
-  const rows=simulationRows(metrics,{...readings,operating_state:values.operating_state},Boolean(overview));
-  if (values.process_notice) rows.push(['Điều kiện công nghệ',processNotices[values.process_notice] || values.process_notice]);
-  if (values.trip_reason) rows.push(['Bảo vệ tác động',protectionLabels[values.trip_reason] || values.trip_reason]);
-  if (values.waiting_reason) rows.push(['Lý do chờ',waitingLabels[values.waiting_reason] || values.waiting_reason]);
-  if (grades) for (const [grade,reading] of Object.entries(grades)) {
-    rows.push(['Tồn kho mác '+grade,simulationNumber.format(reading)+' t']);
-  }
-  const componentTables=Object.entries(components).map(([key,signals])=>{
-    const definition=operationComponents[key];
-    if (!definition) return '';
-    const [label,metrics]=definition;
-    const componentRows=simulationRows(metrics,signals);
-    return componentRows.length?'<h3>'+esc(label)+'</h3>'+table(['Thông số','Giá trị đo'],componentRows):'';
-  });
-  const alerts=(values.active_faults || []).map(({component,fault})=>{
-    const entry=equipmentFaults[simulation.asset]?.find(([,source,code])=>source===component && code===fault);
-    return note((entry?.[3] || fault)+' — '+(operationComponents[component]?.[0] || component));
-  });
-  target.innerHTML=alerts.join('')+table(['Thông số','Giá trị'],rows)+componentTables.join('');
-}
-
-function simulationRows(metrics, values, includeMissing=false) {
-  return Object.entries(metrics).filter(([key])=>includeMissing || Object.hasOwn(values,key)).map(([key,[label,unit]])=>{
-    const raw=values[key];
-    const value=typeof raw==='number'?simulationNumber.format(unit==='%'?raw*100:raw):(operationLabels[raw] || raw);
-    return [label,value==null?'—':String(value)+(unit?' '+unit:'')];
-  });
+  const rows=simulation.tags.filter(tag=>tag.device_id===simulation.asset && tag.visible)
+    .map(tag=>{
+      const raw=readings[tag.tag_id];
+      const value=typeof raw==='number'?simulationNumber.format(raw):
+        typeof raw==='boolean'?(raw?'Có':'Không'):(operationLabels[raw] || raw);
+      return [tag.label,value==null?'—':String(value)+(tag.unit?' '+tag.unit:'')];
+    });
+  target.innerHTML=table(['Thông số','Giá trị đo'],rows);
 }
 
 function updateFaultControls() {
@@ -1236,9 +1081,11 @@ async function loadOperation(faults=[], reset=false) {
     });
     if (!response.ok) throw new Error('Simulation request failed');
     const result=await response.json();
+    if (reset || simulation.session!==result.session) simulation.faults.clear();
     simulation.session=result.session;
     simulation.frame=result.frame;
-    simulation.faults=new Set(result.faults);
+    simulation.tags=result.tags;
+    for (const fault of faults) simulation.faults.add(fault);
   } catch {
     simulation.error='Không tải được dữ liệu mô phỏng. Kiểm tra máy chủ Python rồi thử lại.';
   } finally {
@@ -1257,13 +1104,19 @@ function showLiveEquipmentState() {
   if (!simulation.frame || demoState.enabled) return;
   for (const node of $('canvas').querySelectorAll('[data-node]')) {
     const id=node.dataset.node;
-    const assets=simulationAssets[id]?[id]:(record.get(id)?.equipment || []).filter(key=>simulationAssets[key]);
-    const states=assets.map(key=>[key,simulation.frame.equipment[simulationAssets[key]]]).filter(([,values])=>values);
-    if (!states.length) continue;
-    node.classList.toggle('live-running',states.every(([,values])=>['RUNNING','AVAILABLE'].includes(values.operating_state)));
-    node.classList.toggle('live-alert',states.some(([,values])=>values.active_faults?.length || values.process_notice));
-    node.classList.toggle('live-trip',states.some(([,values])=>values.operating_state==='TRIPPED'));
-    node.querySelector('title').textContent=states.map(([key,{operating_state:state}])=>key+' · '+(operationLabels[state] || state)).join('\n');
+    const measurements=simulation.frame.measurements;
+    const assets=measurements[id]?[id]:(record.get(id)?.equipment || []);
+    const states=assets.flatMap(key=>{
+      const tags=simulation.tags.filter(tag=>tag.device_id===key && tag.source.section==='equipment');
+      const run=tags.find(tag=>tag.source.transform==='run');
+      const trip=tags.find(tag=>tag.source.transform==='trip');
+      if (!run || !trip || !measurements[key]) return [];
+      return [[key,measurements[key][trip.tag_id]?'TRIPPED':measurements[key][run.tag_id]?'RUNNING':'STOPPED']];
+    });
+    node.classList.toggle('live-running',states.length>0 && states.every(([,state])=>state==='RUNNING'));
+    node.classList.toggle('live-trip',states.some(([,state])=>state==='TRIPPED'));
+    if (states.length) node.querySelector('title').textContent=states.map(([key,state])=>
+      key+' · '+(operationLabels[state] || state)).join('\n');
   }
 }
 
