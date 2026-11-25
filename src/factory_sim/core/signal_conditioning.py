@@ -62,7 +62,10 @@ def conditioned_value(raw, tag, state, time_s, step_s, seed, noise_enabled):
     value = state["filtered"]
     if value is not None:
         low, high, resolution = (cfg[key] for key in ("range_min", "range_max", "resolution"))
-        if noise_enabled and cfg["noise_pct_of_span"] and not (value == 0 and cfg.get("preserve_zero")):
+        settled_zero = cfg.get("preserve_zero") and state["target"] == 0 and abs(value) < resolution / 2
+        if settled_zero:
+            value = 0
+        elif noise_enabled and cfg["noise_pct_of_span"]:
             if "rng" not in state:
                 digest = sha256(f"{seed}:{tag['tag_id']}".encode()).digest()
                 state["rng"] = Random(int.from_bytes(digest, "big"))

@@ -122,6 +122,8 @@ class SignalConditioningTest(unittest.TestCase):
             if current.endswith("current_a"):
                 self.assertLess(self.reading(first, current), 1)
                 self.assertEqual(self.reading(third, current), 0)
+                noisy = self.project(simulate(plant, self.assets, config), plant=plant, noise_enabled=True)
+                self.assertEqual(self.reading(noisy[72], current), 0)
             else:
                 self.assertGreater(self.reading(first, current), 0)
                 self.assertGreater(self.reading(third, current), 0)

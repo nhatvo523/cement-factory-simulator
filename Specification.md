@@ -1508,6 +1508,16 @@ Baseline dùng dung sai tuyệt đối cấu hình là 1e-8 t, 1e-8 t/h, 1e-8 m�
 
 Tài liệu đối chiếu mô tả cấu hình bypass của raw mill và quan hệ giữa nhiệt độ, thời gian nung và free CaO. Các đường cong, thời gian và ngưỡng số trong simulator là cấu hình giả định. [Sơ đồ khí thải và raw mill bypass](https://gaftp.epa.gov/Air/Portland%20Cement/Heidelberg%20Materials%20Union%20Bridge%20Plant%20-%20NESHAP%20RTR%20Stack%20Test%20Report.pdf) · [Nghiên cứu ảnh hưởng tốc độ gia nhiệt đến clinker](https://www.sciencedirect.com/science/article/abs/pii/S0008884698001963)
 
+### Bước 3 — Cấu hình đo lường và cảnh báo
+
+Solver tính vật liệu và nhiệt/chất lượng trước. Bước tạo dữ liệu công bố áp dụng phương trình bậc một, thời gian truyền, bão hòa ở hai đầu thang đo, lượng tử hóa và giữ giá trị giữa các kỳ lấy mẫu. Mỗi tag có cấu hình theo đơn vị kỹ thuật trong `conditioning`. `time_constant_s` ở cấp tag của Pha A là động học sẵn có, còn `conditioning.time_constant_s` là quán tính của phép đo. Chu kỳ lấy mẫu và xử lý debounce được ghi nhận ở frame đạt hạn tiếp theo. Nhiễu phân bố đều đối xứng theo phần trăm span, với bộ phát riêng theo seed và tag. Các tag analog phù hợp giữ 0 thật ở trạng thái dừng. Tắt `signal_conditioning.enabled` trả số đo Pha B, bỏ tiếp điểm và cảnh báo ra khỏi payload.
+
+RUN/TRIP, tiếp điểm H/L và hành trình giới hạn damper có debounce. RUN nhả sau dòng truyền động. Nhiệt giảm theo quán tính quá trình và đầu đo còn mức silo được làm trơn. Mức H/L phát từ nguồn mức hiện có. Giới hạn damper phát từ phản hồi vị trí hiện có.
+
+Cảnh báo L/LL/H/HH có tag riêng, deadband và thời gian tác động/nhả. Ngưỡng cấu hình theo chế độ. Nhiệt khí vào mill che cảnh báo thấp khi RM-201 dừng. Nhiệt khí cửa vào lò dùng ngưỡng riêng trong 120 s khởi động sau khi chuyển từ dừng sang chạy. Các ngưỡng HH/LL từ metadata bảo vệ chỉ dùng hiển thị cảnh báo trong Bước 3. Logic trip tiếp tục nằm trong solver.
+
+Không có tag online độ ẩm bột liệu hoặc free lime. Nhiệt khí ra mill là đại lượng đo gián tiếp cho sấy. Lab free lime chọn `automatic` (10/5 phút) hoặc `manual_hourly` (60/30 phút) qua cấu hình plant, mặc định giả định dùng phân tích tự động. Sửa điều kiện bypass trước Bước 3: khi lò ngừng cấp liệu, chế độ nội bộ là `NO_KILN_GAS` và damper không bypass. Hai vân tay hồi quy được chốt riêng sau sửa điều kiện này. [Sensor-Audit.md](Sensor-Audit.md) · [Báo cáo bypass và đối chiếu](Thermal-Coupling-Report.md)
+
 ## 4. Trạng thái triển khai
 
 Tài liệu là **đặc tả mô phỏng**, chưa phải bằng chứng hệ thống simulation đã chạy. Engineering Explorer HTML là công cụ duyệt kiến trúc; dữ liệu mô phỏng, phương trình đã hiệu chỉnh, điều khiển thời gian thực và kiểm thử end-to-end là các phần cần triển khai/kiểm chứng riêng.

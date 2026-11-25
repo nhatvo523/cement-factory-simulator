@@ -53,6 +53,14 @@ Mặc định `thermal_coupling.enabled: true` trong plant. Khi tắt cờ, hai 
 
 Các giả định chính gồm hệ số nhiệt theo suất nhiên liệu, phân bổ nhiệt cooler 72% gió thứ cấp và 28% gió ba, thời gian lưu tham chiếu 1.800 s và đường cong free lime theo nhiệt/thời gian lưu. Ngưỡng, dải và tham số vẫn là giả định mô phỏng. Điều kiện duyệt Bước 3 gồm hiệu chuẩn từ dữ liệu ca vận hành, tách quán tính của quá trình khỏi quán tính đầu đo, chọn nhiễu theo seed, dải bão hòa, debounce và ngưỡng cảnh báo theo chế độ. [Đối chiếu 65 kịch bản](Thermal-Coupling-Report.md)
 
+## Rà soát trước Bước 3 và cấu hình đo lường
+
+- Không có tag liên tục đại diện độ ẩm bột liệu hoặc free lime. Nhiệt độ khí ra RM-201 là tín hiệu gián tiếp để theo dõi sấy, không chuyển đổi thành giá trị độ ẩm. Free lime chỉ có ở `CL-301.lab.free_lime_pct`. Lịch lab mặc định giả định nhà máy dùng phân tích tự động (lấy mẫu 10 phút, trả sau 5 phút). Đổi `thermal_coupling.lab.analysis_type` sang `manual_hourly` để lấy mẫu 60 phút và trả sau 30 phút.
+- Đã rà 26 ca bypass trước đây. Sau khi ràng buộc lò còn cấp liệu, 19 ca được phép bypass khi RM-201 dừng và lò vẫn chạy. Bảy ca còn lại bị chặn hoàn toàn. Các ca thay đổi vật liệu và trạng thái có giải thích riêng. [Báo cáo đối chiếu](Thermal-Coupling-Report.md)
+- Bước 3 công bố 87 tag analog, 74 tag nhị phân (RUN/TRIP, mức H/L, giới hạn damper), 20 tag trạng thái/metadata và 2 bộ đếm. Có thêm 84 tag cảnh báo rời rạc ở kênh `alarms`. Một tag lab dùng lịch phân tích riêng. H/L và giới hạn damper là tiếp điểm mô phỏng suy từ nguồn mức/vị trí đã có.
+- Mỗi tag đo có cấu hình `conditioning` ngay trong danh mục. Cờ `signal_conditioning.enabled` bật mặc định và tắt được để nhận lại số đo Pha B đã sửa bypass. `noise_enabled` và `seed` chỉ đổi nhiễu thiết bị đo. Vân tay vật liệu và nhiệt/chất lượng được lưu và đối chiếu riêng.
+- Các thông số đo là giả định. Nhiệt độ có hằng số đầu đo mặc định 20 s và lấy mẫu 5 s. Dòng điện có hằng số 0,15 s, áp suất 0,25 s, mức 8 s. Thời gian RUN nhả 3 s, cảnh báo thông thường tác động sau 5 s và nhả sau 8 s. Cần hiệu chỉnh theo thiết bị hoặc historian thật trước khi dùng để đánh giá vận hành một nhà máy cụ thể.
+
 ## Bề mặt dữ liệu trước Bước 1
 
 | Bề mặt | Dữ liệu hiện có |
