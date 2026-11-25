@@ -7,10 +7,11 @@ from pathlib import Path
 from factory_sim.equipment import IMPLEMENTATIONS
 from factory_sim.bulk_components import BULK_COMPONENT_MODELS
 from factory_sim.milling_components import MILLING_COMPONENT_MODELS
+from factory_sim.kiln_components import KILN_COMPONENT_MODELS
 from factory_sim.crusher import FAULTS as CRUSHER_FAULTS
 
 
-COMPONENT_MODELS = {**BULK_COMPONENT_MODELS, **MILLING_COMPONENT_MODELS}
+COMPONENT_MODELS = {**BULK_COMPONENT_MODELS, **MILLING_COMPONENT_MODELS, **KILN_COMPONENT_MODELS}
 
 
 def read_json(path):

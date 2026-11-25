@@ -113,19 +113,74 @@
     },
     {
       "id": "product_silo",
-      "model_type": "bulk_storage_v1",
+      "model_type": "feed_bin_v1",
       "parameters": {
         "capacity_t": 55,
         "initial_t": 35,
+        "outlet_capacity_tph": 110,
         "initial_moisture_fraction": 0.005
       }
     },
     {
       "id": "downstream_feeder",
-      "model_type": "bulk_throughput_v1",
+      "model_type": "belt_weigh_feeder_v1",
       "parameters": {
-        "capacity_tph": 95.47738693467336
+        "capacity_tph": 95.47738693467336,
+        "belt_speed_m_s": 0.38
       }
+    },
+    {
+      "id": "preheater",
+      "model_type": "cyclone_preheater_v1",
+      "parameters": {
+        "capacity_tph": 110,
+        "reference_exhaust_m3_s": 110,
+        "minimum_draft_fraction": 0.35,
+        "cyclone_dp_pa": 2500,
+        "outlet_temperature_c": 760
+      }
+    },
+    {
+      "id": "precalciner",
+      "model_type": "precalciner_v1",
+      "parameters": {"capacity_tph": 110, "co2_release_fraction": 0.29, "fuel_per_feed": 0.05, "outlet_temperature_c": 875}
+    },
+    {
+      "id": "rotary_kiln",
+      "model_type": "rotary_kiln_v1",
+      "parameters": {
+        "capacity_tph": 85,
+        "co2_release_fraction": 0.07,
+        "fuel_per_feed": 0.035,
+        "fuel_energy_kwh_t": 6500,
+        "outlet_temperature_c": 1450,
+        "rotation_rpm": 3
+      }
+    },
+    {
+      "id": "clinker_cooler",
+      "model_type": "grate_cooler_v1",
+      "parameters": {
+        "capacity_tph": 75, "airflow_m3_s": 90, "clinker_temperature_c": 105, "grate_speed_m_s": 0.015,
+        "clinker_specific_heat_kj_kg_k": 0.9, "heat_recovery_fraction": 0.28
+      }
+    },
+    {
+      "id": "kiln_id_fan",
+      "model_type": "induced_draft_fan_v1",
+      "parameters": {
+        "airflow_m3_s": 110,
+        "fan_speed_rpm": 980,
+        "bearing_temperature_c": 59,
+        "bearing_trip_c": 90,
+        "reference_airflow_m3_s": 110,
+        "reference_suction_pa": 5200
+      }
+    },
+    {
+      "id": "clinker_silo",
+      "model_type": "feed_bin_v1",
+      "parameters": {"capacity_t": 450, "initial_t": 75, "initial_moisture_fraction": 0, "outlet_capacity_tph": 60}
     }
   ],
   "connections": [
@@ -174,6 +229,13 @@
       "to": "downstream_feeder.inlet",
       "kind": "material"
     },
+    {"from": "downstream_feeder.outlet", "to": "preheater.inlet", "kind": "material"},
+    {"from": "preheater.outlet", "to": "precalciner.inlet", "kind": "material"},
+    {"from": "precalciner.outlet", "to": "rotary_kiln.inlet", "kind": "material"},
+    {"from": "rotary_kiln.outlet", "to": "clinker_cooler.inlet", "kind": "material"},
+    {"from": "clinker_cooler.outlet", "to": "clinker_silo.inlet", "kind": "material"},
+    {"from": "preheater.gas_out", "to": "kiln_id_fan.air_in", "kind": "gas"},
+    {"from": "clinker_cooler.heat_out", "to": "rotary_kiln.heat_in", "kind": "heat"},
     {
       "from": "separator.coarse_out",
       "to": "drying_mill.recycle_in",

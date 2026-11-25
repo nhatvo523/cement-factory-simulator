@@ -509,7 +509,7 @@ function renderNode(n) {
     svgText(tag,textX,n.y+21,'node-id',40,1)+
     svgText(n.label || d?.name,textX,n.y+43,'node-label',chars,custom?4:(n.h<90?2:3))+
     (n.caption && n.h>=86 && leading+18<n.w ? svgText(n.caption,textX,n.y+n.h-10,'node-caption',chars,1) : '')+
-    ((!custom && (demoState.enabled || isAsset || ['Z01-L01','Z01-L02'].includes(d.parent))) ? '<circle class="status-dot" cx="'+(n.x+n.w-10)+'" cy="'+(n.y+12)+'" r="3.4"/>' : '')+'</g>';
+    ((!custom && (demoState.enabled || isAsset || ['Z01-L01','Z01-L02','Z02-L01'].includes(d.parent))) ? '<circle class="status-dot" cx="'+(n.x+n.w-10)+'" cy="'+(n.y+12)+'" r="3.4"/>' : '')+'</g>';
 }
 function defaultPath(a,b) {
   const ay = a.y+a.h/2, by = b.y+b.h/2;
@@ -559,7 +559,8 @@ const simulationAssets = {
   'CR-101':'crusher','BC-101':'transfer_conveyor','ST-101':'stockpile',
   'RC-101':'reclaimer','BN-101':'feed_bin','WF-201':'weigh_feeder',
   'RM-201':'drying_mill','SP-201':'separator','FN-201':'process_fan',
-  'SL-301':'product_silo','KF-301':'downstream_feeder'
+  'SL-301':'product_silo','KF-301':'downstream_feeder','PH-301':'preheater','PC-301':'precalciner',
+  'KL-301':'rotary_kiln','CL-301':'clinker_cooler','CF-301':'kiln_id_fan','SL-302':'clinker_silo'
 };
 const simulationScenarios = {
   downstream_feed_stop:'Hạ nguồn dừng nhận liệu'
@@ -594,7 +595,19 @@ const operationComponents = {
   impeller:['Cánh quạt',{}],
   damper:['Van điều tiết khí',{opening_fraction:['Độ mở đo','%']}],
   fan_drive:['Truyền động quạt',{speed_rpm:['Tốc độ quạt','rpm']}],
-  fan_bearing:['Ổ trục quạt',{temperature_c:['Nhiệt độ','°C']}]
+  fan_bearing:['Ổ trục quạt',{temperature_c:['Nhiệt độ','°C']}],
+  cyclone:['Cụm cyclone',{differential_pressure_pa:['Chênh áp cyclone','Pa']}],
+  preheater_outlet:['Đầu ra tháp tiền gia nhiệt',{temperature_c:['Nhiệt độ bột liệu','°C']}],
+  calciner_burner:['Vòi đốt tiền nung',{fuel_flow_tph:['Lưu lượng nhiên liệu','t/h']}],
+  calciner_outlet:['Đầu ra tiền nung',{temperature_c:['Nhiệt độ liệu','°C']}],
+  kiln_drive:['Truyền động lò',{speed_rpm:['Tốc độ quay lò','rpm']}],
+  main_burner:['Vòi đốt chính',{fuel_flow_tph:['Lưu lượng nhiên liệu','t/h']}],
+  burning_zone:['Vùng nung',{temperature_c:['Nhiệt độ vùng nung','°C']}],
+  cooler_fan:['Quạt làm nguội',{airflow_m3_s:['Lưu lượng khí làm nguội','m³/s']}],
+  grate_drive:['Truyền động ghi',{speed_m_s:['Tốc độ ghi','m/s']}],
+  cooler_outlet:['Đầu ra giàn nguội',{temperature_c:['Nhiệt độ clinker','°C']}],
+  cooler_heat_recovery:['Thu hồi nhiệt',{thermal_power_kw:['Công suất nhiệt ước tính','kW']}],
+  draft_sensor:['Điểm đo áp suất',{draft_suction_pa:['Độ lớn áp suất hút','Pa']}]
 };
 const equipmentFaults = {
   'CR-101':[
@@ -643,6 +656,35 @@ const equipmentFaults = {
     ['fan_impeller_degradation','impeller','degradation','Suy giảm cánh quạt'],
     ['fan_damper_stuck','damper','stuck_low','Kẹt ở độ mở thấp'],
     ['fan_bearing_overheat','fan_bearing','overheating','Quá nhiệt ổ trục']
+  ],
+  'SL-301':[
+    ['raw_silo_outlet_blockage','outlet_chute','bridging','Tắc cửa xả bột liệu'],
+    ['raw_silo_level_signal_loss','level_sensor','signal_loss','Mất tín hiệu mức']
+  ],
+  'KF-301':[
+    ['kiln_feeder_jam','feeder_drive','jam','Kẹt cân cấp lò']
+  ],
+  'PH-301':[
+    ['preheater_cyclone_blockage','cyclone','blockage','Tắc cyclone']
+  ],
+  'PC-301':[
+    ['calciner_fuel_loss','calciner_burner','fuel_loss','Mất cấp nhiên liệu']
+  ],
+  'KL-301':[
+    ['kiln_drive_trip','kiln_drive','trip','Trip truyền động lò'],
+    ['kiln_burner_fuel_loss','main_burner','fuel_loss','Mất cấp nhiên liệu']
+  ],
+  'CL-301':[
+    ['cooler_airflow_loss','cooler_fan','airflow_loss','Suy giảm khí làm nguội'],
+    ['cooler_grate_jam','grate_drive','jam','Kẹt ghi làm nguội']
+  ],
+  'CF-301':[
+    ['kiln_id_fan_trip','fan_drive','trip','Trip truyền động quạt hút'],
+    ['kiln_id_fan_derate','impeller','degradation','Suy giảm cánh quạt']
+  ],
+  'SL-302':[
+    ['clinker_silo_outlet_blockage','outlet_chute','bridging','Tắc cửa xả clinker'],
+    ['clinker_silo_level_signal_loss','level_sensor','signal_loss','Mất tín hiệu mức']
   ]
 };
 const protectionLabels = {
@@ -652,11 +694,16 @@ const protectionLabels = {
   reclaimer_travel_stall:'Cầu không di chuyển',
   feeder_drive_jam:'Kẹt truyền động băng cân',feeder_scale_unavailable:'Mất tín hiệu load cell',
   mill_low_hydraulic_pressure:'Áp suất nghiền thấp',mill_high_vibration:'Rung máy nghiền cao',
-  separator_drive_trip:'Trip truyền động rotor',fan_bearing_overtemperature:'Quá nhiệt ổ trục quạt'
+  separator_drive_trip:'Trip truyền động rotor',fan_bearing_overtemperature:'Quá nhiệt ổ trục quạt',
+  calciner_fuel_unavailable:'Mất cấp nhiên liệu tiền nung',kiln_drive_trip:'Trip truyền động lò',
+  kiln_fuel_unavailable:'Mất cấp nhiên liệu vòi đốt chính',cooler_grate_jam:'Kẹt ghi làm nguội',
+  cooler_air_unavailable:'Mất khí làm nguội',kiln_id_fan_drive_trip:'Trip truyền động quạt hút'
 };
 const processNotices = {
   mill_low_airflow:'Khí sấy thấp từ quạt nghiền liệu',
-  mill_separator_unavailable:'Máy phân ly chưa sẵn sàng'
+  mill_separator_unavailable:'Máy phân ly chưa sẵn sàng',
+  kiln_low_draft:'Lực hút hệ nung thấp · Ngừng cấp bột liệu',
+  kiln_limited_draft:'Lực hút hệ nung giảm · Giới hạn cấp bột liệu'
 };
 const waitingLabels = {
   reclaimer_discharge_unavailable:'Phễu nhận chưa sẵn sàng',
@@ -683,7 +730,15 @@ const equipmentOverview = {
   'WF-201':['operating_state','outlet_tph'],
   'RM-201':['operating_state','fresh_inlet_tph','outlet_tph','outlet_moisture_fraction','recycle_tph'],
   'SP-201':['operating_state','inlet_tph','outlet_tph','recycle_tph'],
-  'FN-201':['operating_state','airflow_m3_s']
+  'FN-201':['operating_state','airflow_m3_s'],
+  'SL-301':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph'],
+  'KF-301':['operating_state','outlet_tph'],
+  'PH-301':['operating_state','inlet_tph'],
+  'PC-301':['operating_state','outlet_tph'],
+  'KL-301':['operating_state','outlet_tph'],
+  'CL-301':['operating_state','outlet_tph'],
+  'CF-301':['operating_state','airflow_m3_s'],
+  'SL-302':['operating_state','inventory_t','level_fraction','inlet_tph','outlet_tph']
 };
 const operationLabels = {
   RUNNING:'Đang chạy',STOPPED:'Đã dừng',TRIPPED:'Dừng do bảo vệ',IDLE:'Đang chờ',
@@ -786,7 +841,7 @@ function showSimulationFrame() {
   if (simulation.asset==='RC-101') readings.source_inventory_t=frame.measurements.stockpile?.inventory_t;
   const overview=equipmentOverview[simulation.asset];
   const metrics=overview?Object.fromEntries(overview.map(key=>[key,simulationMetrics[key]])):simulationMetrics;
-  if (simulation.asset==='WF-201') metrics.outlet_tph=['Lưu lượng cân đo','t/h'];
+  if (['WF-201','KF-301'].includes(simulation.asset)) metrics.outlet_tph=['Lưu lượng cân đo','t/h'];
   if (simulation.asset==='RM-201') metrics.outlet_tph=['Lưu lượng sang phân ly','t/h'];
   if (simulation.asset==='SP-201') metrics.outlet_tph=['Bột mịn sang silo','t/h'];
   const rows=simulationRows(metrics,{...readings,operating_state:values.operating_state},Boolean(overview));
@@ -1301,7 +1356,7 @@ try {
     if (location.protocol!=='file:') {
       loadOperation();
       setInterval(()=>{
-        if (!simulation.session || simulation.asset || /^Z01-L0[12]/.test(selected)) loadOperation();
+        if (!simulation.session || simulation.asset || /^(Z01-L0[12]|Z02-L01)/.test(selected)) loadOperation();
       },1000);
     }
   }

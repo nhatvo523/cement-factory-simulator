@@ -209,6 +209,27 @@
     },
     "downstream_feeder": {
       "outlet_tph": {"relative_amplitude": 0.009, "period_s": 253}
+    },
+    "preheater": {
+      "inlet_tph": {"relative_amplitude": 0.009, "period_s": 257}
+    },
+    "precalciner": {
+      "outlet_tph": {"relative_amplitude": 0.009, "period_s": 263}
+    },
+    "rotary_kiln": {
+      "outlet_tph": {"relative_amplitude": 0.009, "period_s": 269}
+    },
+    "clinker_cooler": {
+      "outlet_tph": {"relative_amplitude": 0.009, "period_s": 271}
+    },
+    "kiln_id_fan": {
+      "airflow_m3_s": {"relative_amplitude": 0.009, "period_s": 277}
+    },
+    "clinker_silo": {
+      "inventory_t": {"relative_amplitude": 0.01, "period_s": 281},
+      "level_fraction": {"relative_amplitude": 0.008, "period_s": 283},
+      "inlet_tph": {"relative_amplitude": 0.009, "period_s": 293},
+      "outlet_tph": {"relative_amplitude": 0.009, "period_s": 307}
     }
   }
 }

@@ -1,0 +1,12 @@
+{
+  "id": "clinker_silo_level_signal_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "clinker_silo.level_sensor.signal_loss",
+      "value": 1
+    }
+  ]
+}

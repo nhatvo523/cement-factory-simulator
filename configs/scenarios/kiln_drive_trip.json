@@ -1,0 +1,12 @@
+{
+  "id": "kiln_drive_trip",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "rotary_kiln.kiln_drive.trip",
+      "value": 1
+    }
+  ]
+}

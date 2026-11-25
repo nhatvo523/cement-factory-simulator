@@ -1,0 +1,12 @@
+{
+  "id": "raw_silo_outlet_blockage",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "product_silo.outlet_chute.bridging",
+      "value": 1
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "id": "cyclone_preheater_v1",
+  "implementation": "throughput",
+  "component_model": "cyclone_preheater",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ],
+    "gas_out": [
+      "out",
+      "gas"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    },
+    "reference_exhaust_m3_s": {
+      "unit": "m³/s",
+      "min": 0.001
+    },
+    "minimum_draft_fraction": {
+      "min": 0,
+      "max": 1
+    },
+    "cyclone_dp_pa": {
+      "unit": "Pa",
+      "min": 0
+    },
+    "outlet_temperature_c": {
+      "unit": "°C",
+      "min": 0
+    }
+  }
+}

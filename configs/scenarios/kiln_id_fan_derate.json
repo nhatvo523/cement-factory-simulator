@@ -1,0 +1,12 @@
+{
+  "id": "kiln_id_fan_derate",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "kiln_id_fan.impeller.degradation",
+      "value": 0.6
+    }
+  ]
+}

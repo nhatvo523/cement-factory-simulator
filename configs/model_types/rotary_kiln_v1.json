@@ -1,0 +1,43 @@
+{
+  "id": "rotary_kiln_v1",
+  "implementation": "throughput",
+  "component_model": "rotary_kiln",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ],
+    "heat_in": [
+      "in",
+      "heat"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    },
+    "co2_release_fraction": {
+      "min": 0,
+      "max": 1
+    },
+    "fuel_per_feed": {
+      "min": 0,
+      "max": 1
+    },
+    "outlet_temperature_c": {
+      "unit": "°C",
+      "min": 0
+    },
+    "fuel_energy_kwh_t": {"unit": "kWh/t", "min": 1},
+    "rotation_rpm": {
+      "unit": "rpm",
+      "min": 0
+    }
+  }
+}

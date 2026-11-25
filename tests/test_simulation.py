@@ -31,7 +31,7 @@ class SimulationTest(unittest.TestCase):
         for case in ("baseline", "crusher_stop", "fan_derate", "downstream_feed_stop"):
             frames = self.run_case(case, operating_profile=True)
             for frame in frames:
-                self.assertEqual(len(frame["measurements"]), 11)
+                self.assertEqual(len(frame["measurements"]), 17)
                 self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
                 self.assertAlmostEqual(frame["balance"]["water_residual_t"], 0)
             self.assertEqual(frames[:10], baseline[:10])
@@ -284,6 +284,43 @@ class SimulationTest(unittest.TestCase):
         self.assertLess(equipment["product_silo"]["inlet_tph"], baseline["product_silo"]["inlet_tph"])
         self.assertAlmostEqual(equipment["downstream_feeder"]["outlet_tph"], baseline["downstream_feeder"]["outlet_tph"])
         self.assertAlmostEqual(frame["balance"]["water_residual_t"], 0)
+
+    def test_kiln_line_accounts_for_calcination_and_recovers_cooler_heat(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        frame = handler.operation({})["frames"][10]
+        stages = frame["equipment"]
+        self.assertAlmostEqual(stages["precalciner"]["outlet_tph"], stages["rotary_kiln"]["inlet_tph"])
+        self.assertAlmostEqual(stages["clinker_cooler"]["outlet_tph"], stages["clinker_silo"]["inlet_tph"])
+        process_co2_tph = stages["precalciner"]["process_co2_tph"] + stages["rotary_kiln"]["process_co2_tph"]
+        self.assertGreater(frame["balance"]["process_co2_t"], 0)
+        self.assertAlmostEqual(frame["balance"]["process_co2_t"] * 60, process_co2_tph)
+        self.assertGreater(stages["rotary_kiln"]["recovered_heat_kw"], 0)
+        self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
+
+    def test_id_fan_trip_blocks_kiln_feed_with_raw_meal_still_in_silo(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        frame = handler.operation({"fault": ["kiln_id_fan_trip@600"]})["frames"][10]
+        stages = frame["equipment"]
+        self.assertEqual(stages["kiln_id_fan"]["operating_state"], "TRIPPED")
+        self.assertEqual(stages["preheater"]["process_notice"], "kiln_low_draft")
+        self.assertEqual(stages["downstream_feeder"]["outlet_tph"], 0)
+        self.assertGreater(stages["product_silo"]["inventory_t"], 0)
+        self.assertEqual(stages["clinker_silo"]["inlet_tph"], 0)
+        self.assertGreater(stages["clinker_silo"]["outlet_tph"], 0)
+
+    def test_cooler_derate_and_silo_outlet_blockage_affect_different_flows(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        normal = handler.operation({})["frames"][10]["equipment"]
+        frame = handler.operation({"fault": ["cooler_airflow_loss@600",
+                                             "clinker_silo_outlet_blockage@600"]})["frames"][10]
+        stages = frame["equipment"]
+        cooler = stages["clinker_cooler"]
+        self.assertGreater(cooler["components"]["cooler_outlet"]["temperature_c"],
+                           normal["clinker_cooler"]["components"]["cooler_outlet"]["temperature_c"])
+        self.assertLess(cooler["recovered_heat_kw"], normal["clinker_cooler"]["recovered_heat_kw"])
+        self.assertGreater(stages["clinker_silo"]["inlet_tph"], 0)
+        self.assertEqual(stages["clinker_silo"]["outlet_tph"], 0)
+        self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
 
 
 if __name__ == "__main__":

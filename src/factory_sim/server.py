@@ -28,6 +28,10 @@ SCENARIOS = (
     "mill_roller_wear", "mill_roller_imbalance", "mill_hydraulic_loss", "mill_vibration_signal_loss",
     "separator_underspeed", "separator_drive_trip",
     "fan_impeller_degradation", "fan_damper_stuck", "fan_bearing_overheat",
+    "raw_silo_outlet_blockage", "raw_silo_level_signal_loss", "kiln_feeder_jam",
+    "preheater_cyclone_blockage", "calciner_fuel_loss", "kiln_drive_trip", "kiln_burner_fuel_loss",
+    "cooler_airflow_loss", "cooler_grate_jam", "kiln_id_fan_trip", "kiln_id_fan_derate",
+    "clinker_silo_outlet_blockage", "clinker_silo_level_signal_loss",
 )
 CONFIGS = ROOT / "configs"
 PAGES = {

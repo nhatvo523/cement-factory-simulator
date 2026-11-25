@@ -1,0 +1,12 @@
+{
+  "id": "cooler_airflow_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "clinker_cooler.cooler_fan.airflow_loss",
+      "value": 0.6
+    }
+  ]
+}

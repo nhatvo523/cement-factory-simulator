@@ -1,0 +1,12 @@
+{
+  "id": "calciner_fuel_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "precalciner.calciner_burner.fuel_loss",
+      "value": 1
+    }
+  ]
+}

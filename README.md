@@ -32,6 +32,8 @@ Các kịch bản dùng chung `configs/operating_profiles/zone1_operation.json` 
 
 Ở Z01–L02, WF-201 điều khiển một dòng phối liệu tổng dựa trên số đo load cell. Lỗi con lăn thay đổi năng lực nghiền; lỗi tốc độ rotor SP-201 thay đổi tỷ lệ phân ly và hồi lưu. Mô hình chưa dự báo phân bố kích thước hạt. Mất tín hiệu rung RM-201 chỉ ảnh hưởng kênh giám sát vì kịch bản sử dụng một kênh bảo vệ rung độc lập. Khi khí sấy giảm, mô hình giới hạn cấp liệu để giữ mục tiêu độ ẩm. SL-301 tiếp tục cấp cho KF-301 theo lượng tồn khả dụng.
 
+Z02 mô phỏng tuyến SL-301 → KF-301 → PH-301 → PC-301 → KL-301 → CL-301 → SL-302. CF-301 hút khí qua tháp tiền gia nhiệt. Lực hút thấp giới hạn hoặc ngừng cấp liệu. Mô hình hạch toán nước bay hơi và CO₂ tách từ bột liệu, đồng thời ước tính nhiệt giàn nguội thu hồi cho lò. Mô hình dùng hệ số phản ứng và nhiệt độ quy ước. Thời gian lưu, động học cháy và CO₂ từ nhiên liệu nằm ngoài phạm vi bản này. Cửa xả SL-302 cấp cho một nhu cầu hạ nguồn giả định 60 t/h ở ranh giới Zone 3.
+
 ## Phạm vi mô hình
 
 Tuyến mẫu `bulk_material_line.json` dùng bước tính 60 s và thông số giả định. Khi `downstream_feeder` ngừng nhận, `product_silo` tích lũy và giới hạn dòng từ công đoạn trước khi đầy. Khi công đoạn trước giảm sản lượng, silo tiếp tục cấp liệu trong phạm vi tồn kho khả dụng. `transfer_conveyor` biểu diễn vật liệu đang vận chuyển với độ trễ một bước.

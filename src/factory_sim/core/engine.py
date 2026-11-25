@@ -9,6 +9,7 @@ from factory_sim.core.variation import operating_values, sampled_components, sam
 from factory_sim.crusher import RotorCrusher
 from factory_sim.bulk_components import BULK_COMPONENT_MODELS, Reclaimer
 from factory_sim.milling_components import MILLING_COMPONENT_MODELS
+from factory_sim.kiln_components import KILN_COMPONENT_MODELS, ClinkerCooler, CyclonePreheater, KilnStage, RotaryKiln
 
 
 def segments(plant, assets):
@@ -72,11 +73,24 @@ def simulate(plant, assets, scenario, live_events=None):
         key: BULK_COMPONENT_MODELS[asset["model"]["component_model"]](nominal[key])
         for key, asset in assets.items() if asset["model"].get("component_model") in BULK_COMPONENT_MODELS
     }
-    milling_components = {
-        key: MILLING_COMPONENT_MODELS[asset["model"]["component_model"]](nominal[key])
-        for key, asset in assets.items() if asset["model"].get("component_model") in MILLING_COMPONENT_MODELS
+    process_models = {**MILLING_COMPONENT_MODELS, **KILN_COMPONENT_MODELS}
+    process_components = {
+        key: process_models[asset["model"]["component_model"]](nominal[key])
+        for key, asset in assets.items() if asset["model"].get("component_model") in process_models
     }
-    component_models = {**crushers, **bulk_components, **milling_components}
+    component_models = {**crushers, **bulk_components, **process_components}
+    thermal_stages = {key: runtime for key, runtime in process_components.items() if isinstance(runtime, KilnStage)}
+    preheaters = {key: runtime for key, runtime in thermal_stages.items() if isinstance(runtime, CyclonePreheater)}
+    exhausts = {source: target for target, source in fans.items() if kinds[target] == "fan"}
+    if not preheaters.keys() <= exhausts.keys():
+        raise ValueError("Each cyclone preheater requires a gas connection to its exhaust fan")
+    heat_routes = {}
+    for connection in plant["connections"]:
+        if connection["kind"] == "heat":
+            source, target = (connection[name].split(".")[0] for name in ("from", "to"))
+            if not isinstance(thermal_stages.get(source), ClinkerCooler) or not isinstance(thermal_stages.get(target), RotaryKiln):
+                raise ValueError("Heat recovery requires a cooler and a rotary kiln")
+            heat_routes[source] = target
     params = nominal
     profile = scenario.get("profile", {})
     seed = profile.get("seed", 0)
@@ -116,13 +130,16 @@ def simulate(plant, assets, scenario, live_events=None):
         for key, runtime in bulk_components.items():
             if kinds[key] == "throughput":
                 params[key] = {**params[key], "capacity_tph": runtime.capacity(params[key], start)}
-        for key, runtime in milling_components.items():
-            params[key] = runtime.apply(params[key], start)
+        for key, runtime in process_components.items():
+            if key not in preheaters:
+                params[key] = runtime.apply(params[key], start)
+        for key, runtime in preheaters.items():
+            params[key] = runtime.apply(params[key], start, Fan.airflow(params[exhausts[key]]))
         opening_total = sum_materials(stocks.values())
         inflow = {key: Material() for key in stocks}
         outflow = {key: Material() for key in stocks}
         boundary_in, boundary_out = Material(), Material()
-        evaporated = 0.0
+        evaporated = co2_released = 0.0
         data = {key: {} for key in assets}
         for key, kind in kinds.items():
             if kind == "fan":
@@ -169,6 +186,12 @@ def simulate(plant, assets, scenario, live_events=None):
                     if gross:
                         limit = min(limit, Throughput.input_limit(p, hours) / gross)
                     transformations[key] = (unit, unit, coarse)
+                elif key in thermal_stages:
+                    if unit.total:
+                        limit = min(limit, Throughput.input_limit(p, hours) / unit.total)
+                    treated = thermal_stages[key].transform(unit, p)
+                    transformations[key] = (unit, treated, 0)
+                    unit = treated
                 else:
                     if unit.total:
                         limit = min(limit, Throughput.input_limit(p, hours) / unit.total)
@@ -186,6 +209,8 @@ def simulate(plant, assets, scenario, live_events=None):
             for key, (enter, leave, recycle) in transformations.items():
                 water_removed = (enter.water - leave.water) * limit
                 evaporated += water_removed
+                released = (enter.dry - leave.dry) * limit
+                co2_released += released
                 data[key] = {
                     "inlet_tph": (enter.total + recycle) * limit / hours,
                     "outlet_tph": (leave.total + recycle) * limit / hours if kinds[key] == "dryer_mill" else leave.total * limit / hours,
@@ -197,6 +222,8 @@ def simulate(plant, assets, scenario, live_events=None):
                 }
                 if kinds[key] == "separator":
                     del data[key]["fresh_inlet_tph"]
+                if key in thermal_stages:
+                    data[key]["process_co2_tph"] = released / hours
 
         opening_stocks = stocks.copy()
         for key, opening in opening_stocks.items():
@@ -210,7 +237,7 @@ def simulate(plant, assets, scenario, live_events=None):
                 "inventory_moisture_fraction": close.moisture if close.total else None,
                 "inlet_tph": inflow[key].total / hours, "outlet_tph": outflow[key].total / hours,
             }
-        expected = opening_total.plus(boundary_in).minus(boundary_out).minus(Material(water=evaporated))
+        expected = opening_total.plus(boundary_in).minus(boundary_out).minus(Material(co2_released, evaporated))
         inventory = sum_materials(stocks.values())
         errors = inventory.minus(expected)
         if not all(isclose(v, 0, abs_tol=1e-8) for v in (errors.dry, errors.water)):
@@ -231,6 +258,11 @@ def simulate(plant, assets, scenario, live_events=None):
                 values["fines_fraction"] = params[key]["fines_fraction"]
         for key, crusher in crushers.items():
             crusher.telemetry(data[key], nominal[key], f"{seed}:{key}", start + step, step)
+        for source, target in heat_routes.items():
+            recovered = thermal_stages[source].recovered_heat_kw(
+                data[source]["outlet_tph"], params[target]["outlet_temperature_c"])
+            data[source]["recovered_heat_kw"] = recovered
+            data[target]["recovered_heat_kw"] = recovered
         measured = {key: sampled_values(data[key], config, f"{seed}:{key}:sensor", start + step)
                     for key, config in signals.items()}
         for key, runtime in bulk_components.items():
@@ -247,7 +279,7 @@ def simulate(plant, assets, scenario, live_events=None):
                     and (receiving_model is None or receiving_model.accepts_inlet(start)),
                 }
             runtime.telemetry(data[key], measured.get(key, {}), start, f"{seed}:{key}", **route_status)
-        for key, runtime in milling_components.items():
+        for key, runtime in process_components.items():
             runtime.telemetry(data[key], measured.get(key, {}), start, f"{seed}:{key}")
             if kinds[key] == "dryer_mill":
                 if params[routes[key]]["capacity_tph"] == 0:
@@ -260,7 +292,8 @@ def simulate(plant, assets, scenario, live_events=None):
         yield {"time_s": start + step, "events": interval_events, "equipment": data,
                "measurements": measured,
                "balance": {"dry_residual_t": errors.dry, "water_residual_t": errors.water,
-                           "evaporated_water_t": evaporated, "boundary_input_t": boundary_in.total,
+                           "evaporated_water_t": evaporated, "process_co2_t": co2_released,
+                           "boundary_input_t": boundary_in.total,
                            "boundary_output_t": boundary_out.total, "inventory_t": inventory.total}}
 
 

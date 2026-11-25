@@ -1,0 +1,42 @@
+{
+  "id": "induced_draft_fan_v1",
+  "implementation": "fan",
+  "component_model": "kiln_draft_fan",
+  "ports": {
+    "air_in": [
+      "in",
+      "gas"
+    ],
+    "air_out": [
+      "out",
+      "gas"
+    ]
+  },
+  "parameters": {
+    "airflow_m3_s": {
+      "unit": "m³/s",
+      "min": 0,
+      "runtime": true
+    },
+    "fan_speed_rpm": {
+      "unit": "rpm",
+      "min": 0.01
+    },
+    "bearing_temperature_c": {
+      "unit": "°C",
+      "min": 0
+    },
+    "bearing_trip_c": {
+      "unit": "°C",
+      "min": 0
+    },
+    "reference_airflow_m3_s": {
+      "unit": "m³/s",
+      "min": 0.001
+    },
+    "reference_suction_pa": {
+      "unit": "Pa",
+      "min": 0
+    }
+  }
+}
