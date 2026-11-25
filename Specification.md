@@ -582,18 +582,20 @@ Fault theo thiết bị: ST-F01 kho đầy → hạn chế upstream; ST-F02 ẩm
 
 ### RC-101 — Reclaimer
 
-Chức năng: Thu hồi nguyên liệu từ kho và cấp đến bins.
+Chức năng: Thu hồi đá vôi từ ST-101 và cấp vào BN-101. Simulator dùng máy thu hồi kiểu cầu cào dùng xích. Giàn cào di chuyển ngang để làm tơi mặt đống, xích cào đưa liệu đến đường xả và cầu tiến dọc ray.
 
-| Nhóm                                | Thông số / tín hiệu cần quản lý                         |
-|-------------------------------------|---------------------------------------------------------|
-| Đầu vào / điều kiện                 | Available stock t; moisture                             |
-| Vận hành / sức khỏe                 | Reclaim rate t/h; drive current; travel speed; position |
-| Đầu ra / chất lượng                 | Outlet t/h                                              |
-| Điều khiển / bảo vệ                 | Reclaim SP; drive interlock; travel limits              |
-| Trạng thái                          | RUNNING/DERATED/TRIPPED/STARVED                         |
-| Tham số mô hình (không phải sensor) | rated_tph, efficiency, response_time_s                  |
+| Nhóm | Tín hiệu trên SCADA |
+|------|----------------------|
+| Tổng quan | Lưu lượng cân băng xả t/h, tổng khối lượng thu hồi trong phiên t, số đo tồn ST-101 |
+| Xích cào và motor | Tốc độ xích m/s, dòng điện motor kéo xích A |
+| Cầu và giàn cào | Vị trí m, tốc độ di chuyển m/min, chiều chạy và công tắc hành trình |
+| PLC | RUNNING/IDLE/TRIPPED, sẵn sàng nhận liệu và lý do chờ hoặc trip |
 
-Fault theo thiết bị: RC-F01 cơ cấu thu hồi suy giảm → Qout↓; RC-F02 drive trip → Qout=0; RC-F03 stockpile cạn → thiếu cấp
+Fault theo thiết bị: RC-F01 kẹt xích cào → tốc độ và lưu lượng giảm, dòng motor tăng → trip sau 30 giây; RC-F02 kẹt di chuyển cầu → chặn thu hồi → trip sau 10 giây; RC-F03 mất encoder giàn cào → mất số đo vị trí và tốc độ, công tắc hành trình vẫn hoạt động.
+
+Kho cạn hoặc phễu đầy làm RC-101 chờ.
+
+Các giá trị danh định trong simulator gồm năng suất 100 t/h, tốc độ xích 0,45 m/s, cầu di chuyển 0,3 m/min trên hành trình 45 m và giàn cào di chuyển 6 m/min trên hành trình 10 m. Các số liệu và thời gian bảo vệ là giả định mô phỏng.
 
 ### BN-101 — Raw Material Bins
 

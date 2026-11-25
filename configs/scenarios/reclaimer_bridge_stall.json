@@ -1,0 +1,6 @@
+{
+  "id": "reclaimer_bridge_stall",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [{"at_s": 600, "target": "reclaimer.bridge_travel.stall", "value": 1}]
+}

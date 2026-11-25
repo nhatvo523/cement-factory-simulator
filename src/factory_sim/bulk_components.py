@@ -88,26 +88,82 @@ class Stockpile(BulkComponents):
 
 
 class Reclaimer(BulkComponents):
-    FAULTS = {"reclaim_mechanism": {"jam"}}
+    """Bridge scraper with a chain drive and two reversing travel axes."""
 
-    def tripped(self, time_s):
-        return self.elapsed("reclaim_mechanism", "jam", time_s) >= self.parameters["trip_delay_s"]
+    FAULTS = {"scraper_chain": {"jam"}, "bridge_travel": {"stall"}, "harrow_encoder": {"signal_loss"}}
+
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        self.bridge = TravelAxis(parameters["bridge_travel_m"], parameters["bridge_speed_m_min"])
+        self.harrow = TravelAxis(parameters["harrow_travel_m"], parameters["harrow_speed_m_min"])
+        self.totalized_t = 0.0
+        self.trip = None
+
+    def trip_reason(self, time_s):
+        if self.trip is None:
+            if self.elapsed("scraper_chain", "jam", time_s) >= self.parameters["trip_delay_s"]:
+                self.trip = "reclaimer_overload"
+            elif self.elapsed("bridge_travel", "stall", time_s) >= self.parameters["travel_trip_delay_s"]:
+                self.trip = "reclaimer_travel_stall"
+        return self.trip
 
     def capacity(self, parameters, time_s):
-        return 0 if self.tripped(time_s) else parameters["capacity_tph"] * (1 - self.severity("reclaim_mechanism", "jam"))
+        if self.trip_reason(time_s) or self.severity("bridge_travel", "stall"):
+            return 0
+        return parameters["capacity_tph"] * (1 - self.severity("scraper_chain", "jam"))
 
-    def telemetry(self, values, measures, time_s, seed):
-        tripped = self.tripped(time_s)
-        jam = self.severity("reclaim_mechanism", "jam")
+    def telemetry(self, values, measures, time_s, seed, *, step_s, stock_available, discharge_ready):
+        trip = self.trip_reason(time_s)
+        jam = self.severity("scraper_chain", "jam")
+        stalled = self.severity("bridge_travel", "stall")
+        running = not trip and stock_available and discharge_ready and (values["outlet_tph"] > 0 or jam or stalled)
         load = min(1, values["outlet_tph"] / self.parameters["capacity_tph"])
         current = self.parameters["motor_current_a"] * (0.3 + 0.7 * load + jam)
         current *= 1 + 0.02 * wave(seed, "reclaimer_current", time_s, 390)
-        running = not tripped and (values["outlet_tph"] > 0 or jam)
-        state = "TRIPPED" if tripped else ("RUNNING" if running else "IDLE")
+        state = "TRIPPED" if trip else ("RUNNING" if running else "IDLE")
+        if not running and not trip:
+            if not discharge_ready:
+                values["waiting_reason"] = "reclaimer_discharge_unavailable"
+            elif not stock_available:
+                values["waiting_reason"] = "reclaimer_stock_empty"
+        bridge = self.bridge.readings(step_s, running and not stalled and not jam)
+        harrow = self.harrow.readings(step_s, running and not stalled and not jam)
+        encoder_lost = self.severity("harrow_encoder", "signal_loss")
+        flow = measures.get("outlet_tph")
+        if flow is not None:
+            self.totalized_t += flow * step_s / 3600
+            measures["reclaimed_total_t"] = self.totalized_t
         self.annotate(values, state, {
-            "reclaim_mechanism": {"speed_rpm": self.parameters["reclaim_speed_rpm"] * (1 - jam) if running else 0},
-            "main_motor": {"current_a": current if running else 0},
-        }, "reclaimer_overload" if tripped else None)
+            "scraper_chain": {
+                "speed_m_s": self.parameters["chain_speed_m_s"] * (1 - jam) if running else 0,
+                "current_a": current if running else 0,
+            },
+            "bridge_travel": bridge,
+            "harrow_travel": {"end_limit": harrow["end_limit"], "direction": harrow["direction"]},
+            "harrow_encoder": {"position_m": None if encoder_lost else harrow["position_m"],
+                               "travel_speed_m_min": None if encoder_lost else harrow["travel_speed_m_min"],
+                               "signal_quality": "BAD" if encoder_lost else "GOOD"},
+            "discharge_interlock": {"condition": "READY" if discharge_ready else "NOT_READY"},
+        }, trip)
+
+
+class TravelAxis:
+    def __init__(self, length_m, speed_m_min):
+        self.length = length_m
+        self.speed = speed_m_min
+        self.position = 0.0
+        self.forward = True
+
+    def readings(self, step_s, moving):
+        speed = self.speed if moving else 0
+        distance = speed * step_s / 60
+        self.position = max(0, min(self.length, self.position + (distance if self.forward else -distance)))
+        direction = ("FORWARD" if self.forward else "REVERSE") if moving else "STATIONARY"
+        limit = "AT_START" if self.position == 0 else ("AT_END" if self.position == self.length else "NORMAL")
+        if moving and limit != "NORMAL":
+            self.forward = limit == "AT_START"
+        return {"position_m": self.position, "travel_speed_m_min": speed,
+                "direction": direction, "end_limit": limit}
 
 
 class FeedBin(BulkComponents):

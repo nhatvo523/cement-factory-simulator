@@ -22,6 +22,7 @@ SCENARIOS = (
     "crusher_bearing_friction", "crusher_oil_pressure_loss", "crusher_vibration_signal_loss",
     "conveyor_belt_slip", "conveyor_belt_misalignment", "conveyor_chute_blockage", "conveyor_scale_signal_loss",
     "stockpile_level_false_high", "stockpile_stacker_failure", "reclaimer_mechanism_jam",
+    "reclaimer_bridge_stall", "reclaimer_harrow_encoder_loss",
     "feed_bin_outlet_bridging", "feed_bin_level_signal_loss",
 )
 CONFIGS = ROOT / "configs"
@@ -62,7 +63,7 @@ def live_sensor_frame(frame):
     """Send SCADA readings and controller status without solver truth values."""
     state = {}
     for key, values in frame["equipment"].items():
-        state[key] = {name: values[name] for name in ("operating_state", "trip_reason") if name in values}
+        state[key] = {name: values[name] for name in ("operating_state", "trip_reason", "waiting_reason") if name in values}
         if "active_faults" in values:
             state[key]["active_faults"] = [
                 {"component": event["component"], "fault": event["fault"]} for event in values["active_faults"]

@@ -176,6 +176,41 @@ class SimulationTest(unittest.TestCase):
             self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
             self.assertAlmostEqual(frame["balance"]["water_residual_t"], 0)
 
+    def test_reclaimer_travel_encoder_and_discharge_interlock(self):
+        with patch("factory_sim.server.monotonic", return_value=100) as clock:
+            operation = LiveOperation()
+            normal = operation.frame["measurements"]["reclaimer"]
+            self.assertGreater(normal["components"]["bridge_travel"]["position_m"], 0)
+            self.assertGreater(normal["components"]["scraper_chain"]["speed_m_s"], 0)
+            operation.read(["reclaimer_harrow_encoder_loss"])
+            clock.return_value = 101
+            frame = live_sensor_frame(operation.read([])["frame"])
+            readings = frame["measurements"]["reclaimer"]
+            self.assertIsNone(readings["components"]["harrow_encoder"]["position_m"])
+            self.assertEqual(readings["components"]["harrow_travel"]["end_limit"], "NORMAL")
+            self.assertGreater(readings["reclaimed_total_t"], normal["reclaimed_total_t"])
+            self.assertEqual(frame["equipment"]["reclaimer"]["operating_state"], "RUNNING")
+            operation.read(["feed_bin_outlet_bridging"])
+            clock.return_value = 1400
+            frame = live_sensor_frame(operation.read([])["frame"])
+            self.assertEqual(frame["equipment"]["reclaimer"]["waiting_reason"], "reclaimer_discharge_unavailable")
+            self.assertEqual(frame["measurements"]["reclaimer"]["outlet_tph"], 0)
+
+    def test_reclaimer_bridge_stall_stops_travel_and_trips_after_delay(self):
+        with patch("factory_sim.server.monotonic", return_value=100) as clock:
+            operation = LiveOperation()
+            operation.read(["reclaimer_bridge_stall"])
+            clock.return_value = 101
+            frame = operation.read([])["frame"]
+            reclaimer = frame["equipment"]["reclaimer"]
+            self.assertEqual(reclaimer["components"]["bridge_travel"]["travel_speed_m_min"], 0)
+            self.assertEqual(reclaimer["outlet_tph"], 0)
+            self.assertIsNone(reclaimer["trip_reason"])
+            clock.return_value = 111
+            reclaimer = operation.read([])["frame"]["equipment"]["reclaimer"]
+            self.assertEqual(reclaimer["operating_state"], "TRIPPED")
+            self.assertEqual(reclaimer["trip_reason"], "reclaimer_travel_stall")
+
     def test_fan_derate_limits_drying_before_downstream_feed(self):
         frames = self.run_case("fan_derate")
         normal, fault = (frames[i]["equipment"] for i in (9, 10))

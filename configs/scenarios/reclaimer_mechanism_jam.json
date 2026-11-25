@@ -5,7 +5,7 @@
   "events": [
     {
       "at_s": 600,
-      "target": "reclaimer.reclaim_mechanism.jam",
+      "target": "reclaimer.scraper_chain.jam",
       "value": 0.8
     }
   ]

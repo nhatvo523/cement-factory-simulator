@@ -50,7 +50,12 @@
       "model_type": "reclaimer_v1",
       "parameters": {
         "capacity_tph": 100,
-        "reclaim_speed_rpm": 12,
+        "chain_speed_m_s": 0.45,
+        "bridge_travel_m": 45,
+        "bridge_speed_m_min": 0.3,
+        "harrow_travel_m": 10,
+        "harrow_speed_m_min": 6,
+        "travel_trip_delay_s": 10,
         "motor_current_a": 75,
         "trip_delay_s": 30
       }

@@ -18,10 +18,12 @@
       "unit": "t/h",
       "runtime": true
     },
-    "reclaim_speed_rpm": {
-      "min": 0.01,
-      "unit": "rpm"
-    },
+    "chain_speed_m_s": {"min": 0.01, "unit": "m/s"},
+    "bridge_travel_m": {"min": 0.01, "unit": "m"},
+    "bridge_speed_m_min": {"min": 0.01, "unit": "m/min"},
+    "harrow_travel_m": {"min": 0.01, "unit": "m"},
+    "harrow_speed_m_min": {"min": 0.01, "unit": "m/min"},
+    "travel_trip_delay_s": {"min": 1, "unit": "s"},
     "motor_current_a": {
       "min": 0.01,
       "unit": "A"

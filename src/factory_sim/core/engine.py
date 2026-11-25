@@ -7,7 +7,7 @@ from math import isclose
 from factory_sim.equipment import DryerMill, Fan, Material, Separator, Storage, Throughput
 from factory_sim.core.variation import operating_values, sampled_components, sampled_values
 from factory_sim.crusher import RotorCrusher
-from factory_sim.bulk_components import BULK_COMPONENT_MODELS
+from factory_sim.bulk_components import BULK_COMPONENT_MODELS, Reclaimer
 
 
 def segments(plant, assets):
@@ -60,6 +60,7 @@ def segments(plant, assets):
 
 def simulate(plant, assets, scenario, live_events=None):
     paths, kinds, fans, routes = segments(plant, assets)
+    parents = {target: source for source, target in routes.items()}
     step = plant["step_s"]
     if type(step) is not int or step <= 0 or scenario["duration_s"] % step:
         raise ValueError("Duration must be a multiple of the positive step_s")
@@ -190,7 +191,8 @@ def simulate(plant, assets, scenario, live_events=None):
                 if kinds[key] == "separator":
                     del data[key]["fresh_inlet_tph"]
 
-        for key, opening in stocks.items():
+        opening_stocks = stocks.copy()
+        for key, opening in opening_stocks.items():
             close = opening.minus(outflow[key]).plus(inflow[key])
             capacity = params[key]["capacity_t"]
             if min(close.dry, close.water) < -1e-8 or close.total > capacity + 1e-8:
@@ -225,7 +227,19 @@ def simulate(plant, assets, scenario, live_events=None):
         measured = {key: sampled_values(data[key], config, f"{seed}:{key}:sensor", start + step)
                     for key, config in signals.items()}
         for key, runtime in bulk_components.items():
-            runtime.telemetry(data[key], measured.get(key, {}), start, f"{seed}:{key}")
+            route_status = {}
+            if isinstance(runtime, Reclaimer):
+                upstream = opening_stocks.get(parents.get(key))
+                destination = routes.get(key)
+                downstream = opening_stocks.get(destination)
+                receiving_model = bulk_components.get(destination)
+                route_status = {
+                    "step_s": step,
+                    "stock_available": upstream is None or upstream.total > 1e-9,
+                    "discharge_ready": (downstream is None or Storage.acceptance(params[destination], downstream) > 1e-9)
+                    and (receiving_model is None or receiving_model.accepts_inlet(start)),
+                }
+            runtime.telemetry(data[key], measured.get(key, {}), start, f"{seed}:{key}", **route_status)
         for key in component_models:
             components = sampled_components(data[key]["components"], f"{seed}:{key}:sensor", start + step)
             measured.setdefault(key, {})["components"] = components

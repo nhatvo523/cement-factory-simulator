@@ -1,0 +1,6 @@
+{
+  "id": "reclaimer_harrow_encoder_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [{"at_s": 600, "target": "reclaimer.harrow_encoder.signal_loss", "value": 1}]
+}

@@ -42,11 +42,15 @@ COMPONENT_ANALOG_SIGNALS = {
     "temperature_c": {"relative_amplitude": 0.002, "period_s": 190},
     "speed_rpm": {"relative_amplitude": 0.003, "period_s": 175},
     "speed_m_s": {"relative_amplitude": 0.004, "period_s": 165},
+    "position_m": {"relative_amplitude": 0.001, "period_s": 181},
+    "travel_speed_m_min": {"relative_amplitude": 0.004, "period_s": 207},
     "speed_fraction": {"relative_amplitude": 0.004, "period_s": 165},
     "pressure_bar": {"relative_amplitude": 0.006, "period_s": 180},
     "vibration_mm_s": {"relative_amplitude": 0.01, "period_s": 135},
 }
-COMPONENT_READOUTS = {"condition", "signal_quality", "measured_level_fraction", "measured_flow_tph"}
+COMPONENT_READOUTS = {
+    "condition", "signal_quality", "measured_level_fraction", "measured_flow_tph", "direction", "end_limit",
+}
 
 
 def sampled_components(components, seed, time_s):
