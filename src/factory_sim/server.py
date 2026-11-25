@@ -49,13 +49,15 @@ PAGES = {
 
 
 class LiveOperation:
-    def __init__(self):
+    def __init__(self, thermal_coupling=None):
         plant, self.assets = load_plant(
             CONFIGS / "model_types", CONFIGS / "plants/bulk_material_line.json",
         )
+        if thermal_coupling is not None:
+            plant["thermal_coupling"]["enabled"] = thermal_coupling
         baseline = load_scenario(CONFIGS / "scenarios/baseline.json", self.assets)
         self.pending = []
-        self.tag_config = load_tag_config(CONFIGS / "model_types", self.assets)
+        self.tag_config = load_tag_config(CONFIGS / "model_types", self.assets, plant)
         raw_frames = simulate({**plant, "step_s": 1}, self.assets, baseline, self.pending)
 
         def track_frames():
@@ -72,8 +74,12 @@ class LiveOperation:
     def read(self, faults, ground_truth=None):
         with self.lock:
             target = int(monotonic() - self.started) + 1
+            reports = {}
             while self.frame["time_s"] < target:
                 self.public_frame = next(self.frames)
+                for device, channels in self.public_frame.get("lab", {}).items():
+                    for tag, samples in channels.items():
+                        reports.setdefault(device, {}).setdefault(tag, []).extend(samples)
             for name in faults:
                 if name not in self.faults:
                     scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", self.assets)
@@ -83,6 +89,8 @@ class LiveOperation:
                 ground_truth = self.tag_config.get("ground_truth_default", False)
             frame = {key: value for key, value in self.public_frame.items()
                      if key != "ground_truth" or ground_truth}
+            if reports:
+                frame["lab"] = reports
             return {"frame": frame, "tags": self.tag_config["tags"]}
 
 
@@ -102,10 +110,10 @@ class ExplorerHandler(BaseHTTPRequestHandler):
         content = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
         self.send_content(status, content, "application/json; charset=utf-8")
 
-    def simulation(self, scenario, faults=(), ground_truth=None):
+    def simulation(self, scenario, faults=(), ground_truth=None, thermal_coupling=None):
         return build_result(
             CONFIGS / "model_types", CONFIGS / "plants/bulk_material_line.json",
-            CONFIGS / "scenarios" / f"{scenario}.json", faults, ground_truth,
+            CONFIGS / "scenarios" / f"{scenario}.json", faults, ground_truth, thermal_coupling,
         )
 
     def fault_schedule(self, query):

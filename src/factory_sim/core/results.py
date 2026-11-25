@@ -5,8 +5,10 @@ from factory_sim.core.engine import simulate
 from factory_sim.core.telemetry import load_tag_config, public_frames
 
 
-def solve_result(model_directory, plant_path, scenario_path, fault_schedule=()):
+def solve_result(model_directory, plant_path, scenario_path, fault_schedule=(), thermal_coupling=None):
     plant, assets = load_plant(model_directory, plant_path)
+    if thermal_coupling is not None and "thermal_coupling" in plant:
+        plant["thermal_coupling"]["enabled"] = thermal_coupling
     scenario = load_scenario(scenario_path, assets)
     for fault_path, at_s in fault_schedule:
         fault = load_scenario(fault_path, assets)
@@ -33,9 +35,10 @@ def solve_result(model_directory, plant_path, scenario_path, fault_schedule=()):
     return result, plant, assets
 
 
-def build_result(model_directory, plant_path, scenario_path, fault_schedule=(), ground_truth=None):
-    result, plant, assets = solve_result(model_directory, plant_path, scenario_path, fault_schedule)
-    config = load_tag_config(model_directory, assets)
+def build_result(model_directory, plant_path, scenario_path, fault_schedule=(), ground_truth=None,
+                 thermal_coupling=None):
+    result, plant, assets = solve_result(model_directory, plant_path, scenario_path, fault_schedule, thermal_coupling)
+    config = load_tag_config(model_directory, assets, plant)
     if ground_truth is None:
         ground_truth = config.get("ground_truth_default", False)
     result.update(schema_version=2, value_kind="scada", tags=config["tags"],

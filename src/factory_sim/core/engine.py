@@ -12,6 +12,7 @@ from factory_sim.milling_components import MILLING_COMPONENT_MODELS
 from factory_sim.kiln_components import KILN_COMPONENT_MODELS, ClinkerCooler, CyclonePreheater, KilnStage, RotaryKiln
 from factory_sim.cement_dispatch import CementDispatch
 from factory_sim.finishing_components import FINISHING_COMPONENT_MODELS
+from factory_sim.thermal_coupling import KilnRawMillCoupling
 
 
 def segments(plant, assets, branch_assets=()):
@@ -109,6 +110,10 @@ def simulate(plant, assets, scenario, live_events=None):
                 raise ValueError(f"Unsupported heat recovery route: {source} -> {target}")
     kiln_heat = dict.fromkeys(kiln_preheat.values(), 1.0)
     recovered_fraction = dict.fromkeys(raw_heat, 1.0)
+    coupling_config = plant.get("thermal_coupling", {})
+    coupling = KilnRawMillCoupling(coupling_config, step) if coupling_config.get("enabled") else None
+    if coupling and routes.get(routes.get(coupling.mill)) != coupling.meal_silo:
+        raise ValueError("Thermal coupling requires a mill, separator and adjacent meal silo")
     params = nominal
     profile = scenario.get("profile", {})
     seed = profile.get("seed", 0)
@@ -135,7 +140,10 @@ def simulate(plant, assets, scenario, live_events=None):
             key, name = event["target"].split(".", 1)
             if "." in name:
                 component, fault = name.split(".", 1)
-                component_models[key].inject(component, fault, event["value"], start)
+                if event.get("clear"):
+                    component_models[key].faults.pop((component, fault), None)
+                else:
+                    component_models[key].inject(component, fault, event["value"], start)
             else:
                 nominal[key][name] = event["value"]
         params = {**nominal, **{
@@ -151,12 +159,23 @@ def simulate(plant, assets, scenario, live_events=None):
         for key, runtime in process_components.items():
             if key not in preheaters:
                 params[key] = runtime.apply(params[key], start)
+        pressure_factor = 1.0
+        if coupling:
+            mill = coupling.mill
+            ready = (params[mill]["capacity_tph"] > 0 and params[routes[mill]]["capacity_tph"] > 0
+                     and Fan.airflow(params[fans[mill]]) > 0)
+            flow_factor, pressure_factor = coupling.route_gas(ready)
+            fan = coupling.draft_fan
+            params[fan] = {**params[fan], "airflow_m3_s": Fan.airflow(params[fan]) * flow_factor}
+            params[mill] = coupling.prepare_drying(Fan.airflow(params[fan]), params[mill], ready)
         for key, runtime in preheaters.items():
             params[key] = runtime.apply(params[key], start, Fan.airflow(params[exhausts[key]]),
                                         kiln_heat.get(kiln_preheat.get(key), 1.0))
         for mill, source in raw_heat.items():
             fraction = min(preheaters[source].heat_fraction, preheaters[source].draft_fraction)
             recovered_fraction[mill] = fraction
+            if coupling and mill == coupling.mill:
+                continue
             backup = params[mill]["backup_heat_fraction"]
             params[mill] = {**params[mill], "heat_availability_fraction":
                             min(params[mill]["heat_availability_fraction"], backup + (1 - backup) * fraction)}
@@ -200,6 +219,7 @@ def simulate(plant, assets, scenario, live_events=None):
             limit = source.total
             unit = source.scaled(1 / source.total) if source.total else Material()
             transformations = {}
+            wet_mill = None
             for key in nodes:
                 kind, p = kinds[key], params[key]
                 if kind == "storage":
@@ -211,8 +231,17 @@ def simulate(plant, assets, scenario, live_events=None):
                     airflow = data[fans[key]]["airflow_m3_s"]
                     dried = DryerMill.dry(unit, p)
                     _, coarse = Separator.circulating_flow(dried.total, params[routes[key]])
-                    limit = min(limit, Throughput.input_limit(p, hours) / (1 + coarse),
-                                DryerMill.drying_limit(p, airflow, unit.moisture, hours))
+                    drying_limit = DryerMill.drying_limit(p, airflow, unit.moisture, hours)
+                    feed_limit = (coupling.dryer_feed(drying_limit, hours, airflow)
+                                  if coupling and key == coupling.mill else drying_limit)
+                    limit = min(limit, Throughput.input_limit(p, hours) / (1 + coarse), feed_limit)
+                    if limit > drying_limit:
+                        wet_mill = key
+                        provisional = coupling.dried_unit(unit, limit, hours, airflow, p)
+                        _, gross_recycle = Separator.circulating_flow(provisional.total, params[routes[key]])
+                        limit = min(limit, Throughput.input_limit(p, hours) / (1 + gross_recycle))
+                        dried = coupling.dried_unit(unit, limit, hours, airflow, p)
+                        _, coarse = Separator.circulating_flow(dried.total, params[routes[key]])
                     transformations[key] = (unit, dried, coarse)
                     unit = dried
                 elif kind == "separator":
@@ -230,6 +259,14 @@ def simulate(plant, assets, scenario, live_events=None):
                     if unit.total:
                         limit = min(limit, Throughput.input_limit(p, hours) / unit.total)
                     transformations[key] = (unit, unit, 0)
+            if wet_mill:
+                raw, _, _ = transformations[wet_mill]
+                mill_fan = data[fans[wet_mill]]["airflow_m3_s"]
+                unit = coupling.dried_unit(raw, limit, hours, mill_fan, params[wet_mill])
+                separator = routes[wet_mill]
+                _, coarse = Separator.circulating_flow(unit.total, params[separator])
+                transformations[wet_mill] = (raw, unit, coarse)
+                transformations[separator] = (unit, unit, coarse)
             initial = source.scaled(limit / source.total) if source.total else Material()
             if origin:
                 outflow[origin] = initial
@@ -295,8 +332,10 @@ def simulate(plant, assets, scenario, live_events=None):
         for key, crusher in crushers.items():
             crusher.telemetry(data[key], nominal[key], f"{seed}:{key}", start + step, step)
         for source, target in heat_routes.items():
+            hot_temperature = (coupling.burning_c if coupling and target == coupling.kiln
+                               else params[target]["outlet_temperature_c"])
             recovered = thermal_stages[source].recovered_heat_kw(
-                data[source]["outlet_tph"], params[target]["outlet_temperature_c"])
+                data[source]["outlet_tph"], hot_temperature)
             data[source]["recovered_heat_kw"] = recovered
             data[target]["recovered_heat_kw"] = recovered
         measured = {key: sampled_values(data[key], config, f"{seed}:{key}:sensor", start + step)
@@ -339,10 +378,20 @@ def simulate(plant, assets, scenario, live_events=None):
         for key in kiln_heat:
             reference = params[key]["heat_reference_tph"]
             kiln_heat[key] = min(1.0, data[key]["inlet_tph"] / reference) * (1 - thermal_stages[key].severity("main_burner", "fuel_loss"))
+        lab = {}
+        if coupling:
+            fuel_loss = thermal_stages[coupling.kiln].severity("main_burner", "fuel_loss")
+            fuel = params[coupling.kiln]["fuel_per_feed"] * (1 - fuel_loss)
+            lab = coupling.finish(data, opening_stocks, inflow, outflow,
+                                  fuel, start + step)
+            data[routes[coupling.mill]]["wet_meal"] = data[coupling.mill]["wet_meal"]
+            draft = data[coupling.draft_fan]["components"]["draft_sensor"]
+            draft["draft_suction_pa"] *= pressure_factor
         for key in component_models:
             components = sampled_components(data[key]["components"], f"{seed}:{key}:sensor", start + step)
             measured.setdefault(key, {})["components"] = components
         yield {"time_s": start + step, "events": interval_events, "equipment": data,
+               **({"lab": lab} if lab else {}),
                "measurements": measured,
                "balance": {"dry_residual_t": errors.dry, "water_residual_t": errors.water,
                            "evaporated_water_t": evaporated, "process_co2_t": co2_released,

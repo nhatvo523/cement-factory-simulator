@@ -21,10 +21,18 @@ class ScadaContractTest(unittest.TestCase):
         cls.tags = read_json(CONFIGS / "operating_profiles/equipment_tags.json")["tags"]
         cls.allowed = {}
         for tag in cls.tags:
+            if tag.get("channel") == "lab":
+                continue
             cls.allowed.setdefault(tag["device_id"], set()).add(tag["tag_id"])
 
     def assert_public_frame(self, frame):
-        self.assertEqual(set(frame), {"time_s", "measurements"})
+        self.assertEqual(set(frame) - {"lab"}, {"time_s", "measurements"})
+        lab_tags = {(tag["device_id"], tag["tag_id"]) for tag in self.tags if tag.get("channel") == "lab"}
+        for device, readings in frame.get("lab", {}).items():
+            for tag, samples in readings.items():
+                self.assertIn((device, tag), lab_tags)
+                for sample in samples:
+                    self.assertEqual(set(sample), {"sampled_at_s", "reported_at_s", "value"})
         actual = {device: set(values) for device, values in frame["measurements"].items()}
         self.assertEqual(actual, self.allowed)
         for readings in frame["measurements"].values():
@@ -95,10 +103,11 @@ class ScadaContractTest(unittest.TestCase):
         expected = read_json(Path(__file__).with_name("step1_solver_baseline.json"))
         self.assertEqual(set(expected), set(SCENARIOS))
         self.assertEqual(len(expected), 65)
+        legacy_plant = {**self.plant, "thermal_coupling": {**self.plant["thermal_coupling"], "enabled": False}}
         for name in SCENARIOS:
             with self.subTest(scenario=name):
                 scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", self.assets)
                 physical = [{key: frame[key] for key in ("time_s", "equipment", "balance", "events")}
-                            for frame in simulate(self.plant, self.assets, scenario)]
+                            for frame in simulate(legacy_plant, self.assets, scenario)]
                 encoded = json.dumps(physical, sort_keys=True, separators=(",", ":")).encode()
                 self.assertEqual(hashlib.sha256(encoded).hexdigest(), expected[name])

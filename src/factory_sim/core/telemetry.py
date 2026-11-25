@@ -7,13 +7,15 @@ from pathlib import Path
 from factory_sim.core.config import read_json
 
 
-def load_tag_config(model_directory, assets):
+def load_tag_config(model_directory, assets, plant=None):
     path = Path(model_directory).parent / "operating_profiles/equipment_tags.json"
     if not path.is_file():
         return {"tags": [], "ground_truth_default": False}
     config = read_json(path)
     tags = []
     for tag in config["tags"]:
+        if tag.get("requires") and not (plant or {}).get(tag["requires"], {}).get("enabled"):
+            continue
         source = tag["source"]
         dependencies = {source["asset"]}
         model = source.get("passive_model", {})
@@ -27,10 +29,10 @@ def load_tag_config(model_directory, assets):
 
 
 def read_source(frame, source):
-    value = frame[source.get("section", "equipment")].get(source["asset"])
+    value = frame.get(source.get("section", "equipment"), {}).get(source["asset"])
     for field in source["field"].split("."):
         value = value.get(field) if isinstance(value, dict) else None
-    return value
+    return source.get("default") if value is None else value
 
 
 def passive_target(frame, source, value):
@@ -80,9 +82,14 @@ def public_frames(frames, tags, plant, assets, ground_truth=False):
                 bag_history.popleft()
         previous_time = time_s
         readings = {}
+        lab = {}
         for tag in tags:
             source = tag["source"]
             value = read_source(frame, source)
+            if tag.get("channel") == "lab":
+                if value:
+                    lab.setdefault(tag["device_id"], {})[tag["tag_id"]] = value
+                continue
             field = source["field"].rsplit(".", 1)[-1]
             transform = source.get("transform")
             if transform == "bags_count":
@@ -100,9 +107,13 @@ def public_frames(frames, tags, plant, assets, ground_truth=False):
                     value *= 100
                 elif transform == "cell_level":
                     value = min(100.0, 100 * value / compartments[field]["capacity_t"])
-            if "passive_model" in source:
+            coupled = source.get("coupled")
+            coupled_value = read_source(frame, coupled) if coupled else None
+            if coupled_value is not None:
+                value = coupled_value * coupled["scale"] + coupled["offset"]
+            elif "passive_model" in source:
                 value = passive_target(frame, source, value)
-            if value is not None and "time_constant_s" in tag:
+            if value is not None and coupled_value is None and "time_constant_s" in tag:
                 tag_id = tag["tag_id"]
                 previous = thermal_state.get(tag_id, value)
                 weight = -expm1(-step_s / tag["time_constant_s"])
@@ -110,6 +121,8 @@ def public_frames(frames, tags, plant, assets, ground_truth=False):
                 thermal_state[tag_id] = value
             readings.setdefault(tag["device_id"], {})[tag["tag_id"]] = value
         public = {"time_s": time_s, "measurements": readings}
+        if lab:
+            public["lab"] = lab
         if ground_truth:
             public["ground_truth"] = {key: frame[key] for key in ("equipment", "balance", "events")}
         yield public

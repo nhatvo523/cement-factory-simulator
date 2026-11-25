@@ -962,7 +962,7 @@ const operationLabels = {
   READY:'Sẵn sàng',NOT_READY:'Chưa sẵn sàng',FORWARD:'Tiến',REVERSE:'Lùi',STATIONARY:'Đứng yên',
   AT_START:'Đầu hành trình',AT_END:'Cuối hành trình'
 };
-const simulation = {tags:[],asset:null,session:null,frame:null,faults:new Set(),loading:false,error:''};
+const simulation = {tags:[],lab:{},asset:null,session:null,frame:null,faults:new Set(),loading:false,error:''};
 const simulationNumber = new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2});
 function simulationPanel() {
   const available=record.get(simulation.asset)?.type==='Equipment' && location.protocol!=='file:';
@@ -1041,14 +1041,21 @@ function showSimulationFrame() {
     target.innerHTML=note('Thiết bị chưa có dữ liệu trong lượt chạy này.');
     return;
   }
-  const rows=simulation.tags.filter(tag=>tag.device_id===simulation.asset && tag.visible)
+  const tags=simulation.tags.filter(tag=>tag.device_id===simulation.asset && tag.visible);
+  const rows=tags.filter(tag=>tag.channel!=='lab')
     .map(tag=>{
       const raw=readings[tag.tag_id];
       const value=typeof raw==='number'?simulationNumber.format(raw):
         typeof raw==='boolean'?(raw?'Có':'Không'):(operationLabels[raw] || raw);
       return [tag.label,value==null?'—':String(value)+(tag.unit?' '+tag.unit:'')];
     });
-  target.innerHTML=table(['Thông số','Giá trị đo'],rows);
+  const labRows=tags.filter(tag=>tag.channel==='lab').map(tag=>{
+    const sample=simulation.lab[tag.tag_id];
+    return [tag.label,sample?simulationNumber.format(sample.value)+' '+tag.unit:'Chờ kết quả',
+      sample?sample.sampled_at_s+' s':'—',sample?sample.reported_at_s+' s':'—'];
+  });
+  target.innerHTML=table(['Thông số','Giá trị đo'],rows)+
+    (labRows.length?table(['Kết quả lab','Giá trị','Lấy mẫu','Trả kết quả'],labRows):'');
 }
 
 function updateFaultControls() {
@@ -1081,10 +1088,16 @@ async function loadOperation(faults=[], reset=false) {
     });
     if (!response.ok) throw new Error('Simulation request failed');
     const result=await response.json();
-    if (reset || simulation.session!==result.session) simulation.faults.clear();
+    if (reset || simulation.session!==result.session) {
+      simulation.faults.clear();
+      simulation.lab={};
+    }
     simulation.session=result.session;
     simulation.frame=result.frame;
     simulation.tags=result.tags;
+    for (const channels of Object.values(result.frame.lab || {})) {
+      for (const [tag,samples] of Object.entries(channels)) simulation.lab[tag]=samples.at(-1);
+    }
     for (const fault of faults) simulation.faults.add(fault);
   } catch {
     simulation.error='Không tải được dữ liệu mô phỏng. Kiểm tra máy chủ Python rồi thử lại.';

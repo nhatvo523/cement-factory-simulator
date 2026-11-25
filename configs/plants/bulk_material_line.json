@@ -2,6 +2,73 @@
   "id": "bulk_material_line_v1",
   "provenance": "Synthetic engineering assumptions. No measured factory data.",
   "step_s": 60,
+  "thermal_coupling": {
+    "enabled": true,
+    "ambient_c": 25,
+    "assets": {
+      "kiln": "rotary_kiln",
+      "cooler": "clinker_cooler",
+      "preheater": "preheater",
+      "draft_fan": "kiln_id_fan",
+      "mill": "drying_mill",
+      "meal_silo": "product_silo",
+      "clinker_silo": "clinker_silo"
+    },
+    "kiln": {
+      "nominal_burning_c": 1450,
+      "burning_time_s": 240,
+      "reference_feed_tph": 67.45,
+      "reference_recovered_kw": 5905.888275,
+      "secondary_heat_share": 0.72,
+      "reference_fuel_per_feed": 0.035,
+      "fuel_gain_c": 420,
+      "secondary_heat_gain_c": 90,
+      "tertiary_heat_gain_c": 120,
+      "load_gain_c": 45,
+      "reference_residence_s": 1800,
+      "minimum_residence_load": 0.35,
+      "nominal_free_lime_pct": 1.2,
+      "minimum_free_lime_pct": 0.3,
+      "maximum_free_lime_pct": 8,
+      "free_lime_per_degree": 0.026,
+      "free_lime_residence_gain_pct": 1.0
+    },
+    "drying": {
+      "nominal_exhaust_c": 340,
+      "exhaust_time_s": 180,
+      "heat_hold_time_s": 120,
+      "water_evaporation_kwh_per_t": 720,
+      "gas_heat_capacity_kw_per_m3_s_c": 0.03855,
+      "minimum_stable_feed_tph": 48,
+      "wet_threshold_fraction": 0.005000001,
+      "backup_air_c": 210,
+      "outlet_drop_c_per_tph": 38
+    },
+    "gas_route": {
+      "damper_travel_s": 120,
+      "stable_run_s": 120,
+      "stop_confirm_s": 120,
+      "return_hot_c": 195,
+      "dropout_c": 170,
+      "bypass_airflow_factor": 1.07,
+      "bypass_pressure_factor": 0.76,
+      "cyclone_bypass_pressure_factor": 0.85,
+      "pilot_feed_tph": 48,
+      "full_feed_tph": 115,
+      "restart_ramp_tph_per_s": 0.25
+    },
+    "lab": {
+      "sample_interval_s": 600,
+      "report_delay_s": 300
+    },
+    "baseline_tolerance": {
+      "relative": 0.0,
+      "mass_t": 1e-08,
+      "flow_tph": 1e-08,
+      "airflow_m3_s": 1e-08,
+      "moisture_fraction": 1e-10
+    }
+  },
   "feeds": {
     "crusher": {
       "flow_tph": 100,

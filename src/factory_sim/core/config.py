@@ -81,6 +81,36 @@ def load_plant(model_directory, path):
             raise ValueError(f"Incompatible ports: {source} -> {target}")
     if dispatch:
         CementDispatch(dispatch, plant["connections"], assets)
+    coupling = plant.get("thermal_coupling", {})
+    if coupling and type(coupling.get("enabled")) is not bool:
+        raise ValueError("thermal_coupling.enabled must be a boolean")
+    if coupling.get("enabled"):
+        roles = coupling["assets"]
+        links = {(edge["from"].split(".")[0], edge["to"].split(".")[0], edge["kind"])
+                 for edge in plant["connections"]}
+        if not set(roles.values()) <= assets.keys() or not {
+            (roles["cooler"], roles["kiln"], "heat"),
+            (roles["kiln"], roles["preheater"], "heat"),
+            (roles["preheater"], roles["mill"], "heat"),
+            (roles["preheater"], roles["draft_fan"], "gas"),
+            (roles["cooler"], roles["clinker_silo"], "material"),
+        } <= links:
+            raise ValueError("Invalid thermal coupling topology")
+        gas = coupling["gas_route"]
+        drying = coupling["drying"]
+        kiln = coupling["kiln"]
+        for group, keys in (
+            (gas, ("damper_travel_s", "stable_run_s", "stop_confirm_s", "restart_ramp_tph_per_s")),
+            (drying, ("exhaust_time_s", "heat_hold_time_s", "water_evaporation_kwh_per_t")),
+            (kiln, ("burning_time_s", "reference_feed_tph", "reference_fuel_per_feed",
+                    "reference_recovered_kw", "reference_residence_s", "minimum_residence_load")),
+            (coupling["lab"], ("sample_interval_s", "report_delay_s")),
+        ):
+            for key in keys:
+                check_parameter(f"thermal_coupling.{key}", group[key], {"min": 1e-9})
+        if not (gas["dropout_c"] < gas["return_hot_c"] <= drying["backup_air_c"]
+                and coupling["ambient_c"] < min(drying["nominal_exhaust_c"], kiln["nominal_burning_c"])):
+            raise ValueError("Invalid thermal coupling temperature hysteresis")
     return plant, assets
 
 
@@ -100,7 +130,12 @@ def load_scenario(path, assets):
                 CRUSHER_FAULTS if model["implementation"] == "rotor_crusher" else {})
             if fault not in catalog.get(component, ()):
                 raise ValueError(f"Unknown component fault: {event['target']}")
-            check_parameter(event["target"], event["value"], {"min": 0.01, "max": 1})
+            if event.get("clear"):
+                if (event["clear"] is not True or model["implementation"] != "dryer_mill"
+                        or (component, fault) != ("hydraulic_unit", "pressure_loss") or event["value"] != 0):
+                    raise ValueError(f"Unsupported fault reset: {event}")
+            else:
+                check_parameter(event["target"], event["value"], {"min": 0.01, "max": 1})
             continue
         rule = assets[key]["model"]["parameters"][parameter]
         if not rule.get("runtime", False):

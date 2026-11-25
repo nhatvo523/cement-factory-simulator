@@ -14,7 +14,7 @@ class KilnScadaTest(unittest.TestCase):
         handler = ExplorerHandler.__new__(ExplorerHandler)
         cases = ("baseline", "kiln_id_fan_derate", "kiln_id_fan_trip", "cooler_grate_jam",
                  "kiln_feeder_jam", "cooler_airflow_loss")
-        cls.results = {name: handler.simulation(name) for name in cases}
+        cls.results = {name: handler.simulation(name, thermal_coupling=False) for name in cases}
 
     def frames(self, name):
         return self.results[name]["frames"]
@@ -29,7 +29,7 @@ class KilnScadaTest(unittest.TestCase):
                 self.assertGreater(tag["time_constant_s"], 0)
             for frame in baseline["frames"]:
                 self.assertIn(tag["tag_id"], frame["measurements"][tag["device_id"]])
-        replay = ExplorerHandler.__new__(ExplorerHandler).simulation("baseline")
+        replay = ExplorerHandler.__new__(ExplorerHandler).simulation("baseline", thermal_coupling=False)
         self.assertEqual(replay["frames"], baseline["frames"])
 
     def test_cyclone_order_pressure_law_and_thermal_step_response(self):
