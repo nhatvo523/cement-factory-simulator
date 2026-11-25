@@ -1,0 +1,12 @@
+{
+  "id": "crusher_tool_wear",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "crusher.rotor.tool_wear",
+      "value": 0.6
+    }
+  ]
+}

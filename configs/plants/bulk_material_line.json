@@ -1,0 +1,175 @@
+{
+  "id": "bulk_material_line_v1",
+  "provenance": "Synthetic engineering assumptions. No measured factory data.",
+  "step_s": 60,
+  "feeds": {
+    "crusher": {
+      "flow_tph": 100,
+      "moisture_fraction": 0.05
+    }
+  },
+  "equipment": [
+    {
+      "id": "crusher",
+      "model_type": "rotor_crusher_v1",
+      "parameters": {
+        "capacity_tph": 100,
+        "motor_current_a": 145,
+        "motor_temperature_c": 72,
+        "motor_trip_c": 110,
+        "rotor_speed_rpm": 590,
+        "bearing_temperature_c": 61,
+        "bearing_trip_c": 90,
+        "oil_pressure_bar": 3.2
+      }
+    },
+    {
+      "id": "transfer_conveyor",
+      "model_type": "belt_conveyor_v1",
+      "parameters": {
+        "capacity_t": 3.5,
+        "initial_t": 1.6666666666666667,
+        "rated_flow_tph": 100,
+        "belt_speed_m_s": 1.8,
+        "trip_delay_s": 15,
+        "initial_moisture_fraction": 0.05
+      }
+    },
+    {
+      "id": "stockpile",
+      "model_type": "stockpile_v1",
+      "parameters": {
+        "capacity_t": 240,
+        "initial_t": 35,
+        "high_level_interlock": 1,
+        "initial_moisture_fraction": 0.05
+      }
+    },
+    {
+      "id": "reclaimer",
+      "model_type": "reclaimer_v1",
+      "parameters": {
+        "capacity_tph": 100,
+        "reclaim_speed_rpm": 12,
+        "motor_current_a": 75,
+        "trip_delay_s": 30
+      }
+    },
+    {
+      "id": "feed_bin",
+      "model_type": "feed_bin_v1",
+      "parameters": {
+        "capacity_t": 40,
+        "initial_t": 9,
+        "outlet_capacity_tph": 100,
+        "initial_moisture_fraction": 0.05
+      }
+    },
+    {
+      "id": "weigh_feeder",
+      "model_type": "bulk_throughput_v1",
+      "parameters": {
+        "capacity_tph": 100
+      }
+    },
+    {
+      "id": "drying_mill",
+      "model_type": "drying_mill_v1",
+      "parameters": {
+        "capacity_tph": 210,
+        "target_moisture_fraction": 0.005,
+        "evaporation_capacity_tph": 5,
+        "heat_availability_fraction": 1,
+        "reference_airflow_m3_s": 80
+      }
+    },
+    {
+      "id": "separator",
+      "model_type": "bulk_separator_v1",
+      "parameters": {
+        "capacity_tph": 205,
+        "fines_fraction": 0.55
+      }
+    },
+    {
+      "id": "process_fan",
+      "model_type": "process_fan_v1",
+      "parameters": {
+        "airflow_m3_s": 80
+      }
+    },
+    {
+      "id": "product_silo",
+      "model_type": "bulk_storage_v1",
+      "parameters": {
+        "capacity_t": 55,
+        "initial_t": 35,
+        "initial_moisture_fraction": 0.005
+      }
+    },
+    {
+      "id": "downstream_feeder",
+      "model_type": "bulk_throughput_v1",
+      "parameters": {
+        "capacity_tph": 95.47738693467336
+      }
+    }
+  ],
+  "connections": [
+    {
+      "from": "crusher.outlet",
+      "to": "transfer_conveyor.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "transfer_conveyor.outlet",
+      "to": "stockpile.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "stockpile.outlet",
+      "to": "reclaimer.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "reclaimer.outlet",
+      "to": "feed_bin.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "feed_bin.outlet",
+      "to": "weigh_feeder.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "weigh_feeder.outlet",
+      "to": "drying_mill.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "drying_mill.outlet",
+      "to": "separator.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "separator.outlet",
+      "to": "product_silo.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "product_silo.outlet",
+      "to": "downstream_feeder.inlet",
+      "kind": "material"
+    },
+    {
+      "from": "separator.coarse_out",
+      "to": "drying_mill.recycle_in",
+      "kind": "recycle"
+    },
+    {
+      "from": "process_fan.air_out",
+      "to": "drying_mill.air_in",
+      "kind": "gas"
+    }
+  ]
+}

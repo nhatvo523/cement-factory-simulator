@@ -1,0 +1,34 @@
+{
+  "id": "reclaimer_v1",
+  "implementation": "throughput",
+  "component_model": "reclaimer",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "min": 1,
+      "unit": "t/h",
+      "runtime": true
+    },
+    "reclaim_speed_rpm": {
+      "min": 0.01,
+      "unit": "rpm"
+    },
+    "motor_current_a": {
+      "min": 0.01,
+      "unit": "A"
+    },
+    "trip_delay_s": {
+      "min": 1,
+      "unit": "s"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "conveyor_belt_misalignment",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "transfer_conveyor.belt.misalignment",
+      "value": 1
+    }
+  ]
+}

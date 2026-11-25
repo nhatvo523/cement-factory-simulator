@@ -1,0 +1,39 @@
+{
+  "id": "belt_conveyor_v1",
+  "implementation": "storage",
+  "component_model": "belt_conveyor",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_t": {
+      "min": 0.001
+    },
+    "initial_t": {
+      "min": 0
+    },
+    "initial_moisture_fraction": {
+      "min": 0,
+      "max": 0.999
+    },
+    "rated_flow_tph": {
+      "min": 1,
+      "unit": "t/h"
+    },
+    "belt_speed_m_s": {
+      "min": 0.01,
+      "unit": "m/s"
+    },
+    "trip_delay_s": {
+      "min": 1,
+      "unit": "s"
+    }
+  }
+}

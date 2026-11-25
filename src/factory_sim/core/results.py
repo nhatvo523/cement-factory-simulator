@@ -1,0 +1,31 @@
+"""Result contract shared by the CLI and the web server."""
+
+from factory_sim.core.config import load_plant, load_scenario
+from factory_sim.core.engine import simulate
+
+
+def build_result(model_directory, plant_path, scenario_path, fault_schedule=()):
+    plant, assets = load_plant(model_directory, plant_path)
+    scenario = load_scenario(scenario_path, assets)
+    for fault_path, at_s in fault_schedule:
+        fault = load_scenario(fault_path, assets)
+        if at_s < 0 or at_s > 86400 or at_s % plant["step_s"]:
+            raise ValueError("Invalid fault injection time")
+        offset = min(event["at_s"] for event in fault["events"])
+        for event in fault["events"]:
+            event_time = at_s + event["at_s"] - offset
+            scenario["events"].append({**event, "at_s": event_time})
+            scenario["duration_s"] = max(scenario["duration_s"], event_time + 5400)
+    return {
+        "schema_version": 1,
+        "plant_id": plant["id"],
+        "scenario_id": scenario["id"],
+        "operating_profile": scenario.get("operating_profile"),
+        "variation_seed": scenario.get("profile", {}).get("seed"),
+        "provenance": plant["provenance"],
+        "step_s": plant["step_s"],
+        "time_reference": "End of interval. Event at_s applies from the interval start.",
+        "value_kind": "simulated_physical",
+        "units": {"time_s": "s", "*_tph": "t/h", "*_t": "t", "*_fraction": "1", "*_m3_s": "m³/s"},
+        "frames": list(simulate(plant, assets, scenario)),
+    }

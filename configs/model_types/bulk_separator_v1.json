@@ -1,0 +1,31 @@
+{
+  "id": "bulk_separator_v1",
+  "implementation": "separator",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ],
+    "coarse_out": [
+      "out",
+      "recycle"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    },
+    "fines_fraction": {
+      "unit": "1",
+      "min": 0.001,
+      "max": 1,
+      "runtime": true
+    }
+  }
+}

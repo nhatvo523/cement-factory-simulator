@@ -1,0 +1,21 @@
+{
+  "id": "bulk_throughput_v1",
+  "implementation": "throughput",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_tph": {
+      "unit": "t/h",
+      "min": 0,
+      "runtime": true
+    }
+  }
+}

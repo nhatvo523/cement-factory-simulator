@@ -1,0 +1,17 @@
+{
+  "id": "process_fan_v1",
+  "implementation": "fan",
+  "ports": {
+    "air_out": [
+      "out",
+      "gas"
+    ]
+  },
+  "parameters": {
+    "airflow_m3_s": {
+      "unit": "m³/s",
+      "min": 0,
+      "runtime": true
+    }
+  }
+}

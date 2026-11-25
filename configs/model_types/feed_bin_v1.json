@@ -1,0 +1,31 @@
+{
+  "id": "feed_bin_v1",
+  "implementation": "storage",
+  "component_model": "feed_bin",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_t": {
+      "min": 0.001
+    },
+    "initial_t": {
+      "min": 0
+    },
+    "initial_moisture_fraction": {
+      "min": 0,
+      "max": 0.999
+    },
+    "outlet_capacity_tph": {
+      "min": 1,
+      "unit": "t/h"
+    }
+  }
+}

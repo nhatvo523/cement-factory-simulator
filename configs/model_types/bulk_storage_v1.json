@@ -1,0 +1,29 @@
+{
+  "id": "bulk_storage_v1",
+  "implementation": "storage",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_t": {
+      "unit": "t",
+      "min": 0.001
+    },
+    "initial_t": {
+      "unit": "t",
+      "min": 0
+    },
+    "initial_moisture_fraction": {
+      "unit": "1",
+      "min": 0,
+      "max": 0.999
+    }
+  }
+}

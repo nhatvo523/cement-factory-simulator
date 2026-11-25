@@ -1,0 +1,214 @@
+{
+  "seed": 413,
+  "feed_variation": {
+    "crusher": {
+      "flow_tph": {
+        "relative_amplitude": 0.045,
+        "period_s": 780
+      },
+      "moisture_fraction": {
+        "relative_amplitude": 0.08,
+        "period_s": 1140
+      }
+    }
+  },
+  "parameter_variation": {
+    "crusher": {
+      "capacity_tph": {
+        "relative_amplitude": 0.015,
+        "period_s": 660
+      }
+    },
+    "reclaimer": {
+      "capacity_tph": {
+        "relative_amplitude": 0.025,
+        "period_s": 840
+      }
+    },
+    "weigh_feeder": {
+      "capacity_tph": {
+        "relative_amplitude": 0.018,
+        "period_s": 510
+      }
+    },
+    "drying_mill": {
+      "evaporation_capacity_tph": {
+        "relative_amplitude": 0.04,
+        "period_s": 920
+      },
+      "capacity_tph": {
+        "relative_amplitude": 0.02,
+        "period_s": 720
+      }
+    },
+    "separator": {
+      "fines_fraction": {
+        "relative_amplitude": 0.036,
+        "period_s": 680
+      }
+    },
+    "process_fan": {
+      "airflow_m3_s": {
+        "relative_amplitude": 0.032,
+        "period_s": 550
+      }
+    }
+  },
+  "measurements": {
+    "crusher": {
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 150
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 195
+      },
+      "inlet_moisture_fraction": {
+        "relative_amplitude": 0.018,
+        "period_s": 236
+      }
+    },
+    "transfer_conveyor": {
+      "inventory_t": {
+        "relative_amplitude": 0.012,
+        "period_s": 185
+      },
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 161
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 208
+      },
+      "level_fraction": {
+        "relative_amplitude": 0.006,
+        "period_s": 239
+      },
+      "inventory_moisture_fraction": {
+        "relative_amplitude": 0.018,
+        "period_s": 236
+      }
+    },
+    "stockpile": {
+      "inventory_t": {
+        "relative_amplitude": 0.012,
+        "period_s": 201
+      },
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 172
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 221
+      },
+      "level_fraction": {
+        "relative_amplitude": 0.006,
+        "period_s": 248
+      },
+      "inventory_moisture_fraction": {
+        "relative_amplitude": 0.018,
+        "period_s": 252
+      }
+    },
+    "reclaimer": {
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 183
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 234
+      }
+    },
+    "feed_bin": {
+      "inventory_t": {
+        "relative_amplitude": 0.008,
+        "period_s": 219
+      },
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 194
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 247
+      },
+      "level_fraction": {
+        "relative_amplitude": 0.006,
+        "period_s": 266
+      },
+      "inventory_moisture_fraction": {
+        "relative_amplitude": 0.018,
+        "period_s": 284
+      }
+    },
+    "weigh_feeder": {
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 205
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 260
+      }
+    },
+    "drying_mill": {
+      "fresh_inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 261
+      },
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 216
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 273
+      },
+      "outlet_moisture_fraction": {
+        "relative_amplitude": 0.035,
+        "period_s": 272
+      },
+      "recycle_tph": {
+        "relative_amplitude": 0.012,
+        "period_s": 294
+      }
+    },
+    "separator": {
+      "inlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 227
+      },
+      "outlet_tph": {
+        "relative_amplitude": 0.009,
+        "period_s": 286
+      },
+      "outlet_moisture_fraction": {
+        "relative_amplitude": 0.035,
+        "period_s": 279
+      },
+      "recycle_tph": {
+        "relative_amplitude": 0.012,
+        "period_s": 303
+      }
+    },
+    "process_fan": {
+      "airflow_m3_s": {
+        "relative_amplitude": 0.008,
+        "period_s": 200
+      }
+    },
+    "product_silo": {
+      "inventory_t": {"relative_amplitude": 0.01, "period_s": 221},
+      "level_fraction": {"relative_amplitude": 0.008, "period_s": 233},
+      "inlet_tph": {"relative_amplitude": 0.009, "period_s": 243},
+      "outlet_tph": {"relative_amplitude": 0.009, "period_s": 251}
+    },
+    "downstream_feeder": {
+      "outlet_tph": {"relative_amplitude": 0.009, "period_s": 253}
+    }
+  }
+}

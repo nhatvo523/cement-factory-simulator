@@ -1,0 +1,12 @@
+{
+  "id": "conveyor_chute_blockage",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "transfer_conveyor.discharge_chute.blockage",
+      "value": 1
+    }
+  ]
+}

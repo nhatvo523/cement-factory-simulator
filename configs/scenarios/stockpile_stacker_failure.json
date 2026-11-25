@@ -1,0 +1,12 @@
+{
+  "id": "stockpile_stacker_failure",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "stockpile.stacker_drive.drive_failure",
+      "value": 1
+    }
+  ]
+}

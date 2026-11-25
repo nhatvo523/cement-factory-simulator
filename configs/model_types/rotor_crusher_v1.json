@@ -1,0 +1,18 @@
+{
+  "id": "rotor_crusher_v1",
+  "implementation": "rotor_crusher",
+  "ports": {
+    "inlet": ["in", "material"],
+    "outlet": ["out", "material"]
+  },
+  "parameters": {
+    "capacity_tph": {"unit": "t/h", "min": 0, "runtime": true},
+    "motor_current_a": {"unit": "A", "min": 0},
+    "motor_temperature_c": {"unit": "°C", "min": 0},
+    "motor_trip_c": {"unit": "°C", "min": 0},
+    "rotor_speed_rpm": {"unit": "rpm", "min": 0},
+    "bearing_temperature_c": {"unit": "°C", "min": 0},
+    "bearing_trip_c": {"unit": "°C", "min": 0},
+    "oil_pressure_bar": {"unit": "bar", "min": 0}
+  }
+}

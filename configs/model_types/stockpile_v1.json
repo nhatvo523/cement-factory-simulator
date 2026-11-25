@@ -1,0 +1,31 @@
+{
+  "id": "stockpile_v1",
+  "implementation": "storage",
+  "component_model": "stockpile",
+  "ports": {
+    "inlet": [
+      "in",
+      "material"
+    ],
+    "outlet": [
+      "out",
+      "material"
+    ]
+  },
+  "parameters": {
+    "capacity_t": {
+      "min": 0.001
+    },
+    "initial_t": {
+      "min": 0
+    },
+    "initial_moisture_fraction": {
+      "min": 0,
+      "max": 0.999
+    },
+    "high_level_interlock": {
+      "min": 0,
+      "max": 1
+    }
+  }
+}
