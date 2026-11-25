@@ -10,6 +10,7 @@ from factory_sim.crusher import RotorCrusher
 from factory_sim.bulk_components import BULK_COMPONENT_MODELS, Reclaimer
 from factory_sim.milling_components import MILLING_COMPONENT_MODELS
 from factory_sim.kiln_components import KILN_COMPONENT_MODELS, ClinkerCooler, CyclonePreheater, KilnStage, RotaryKiln
+from factory_sim.cement_dispatch import CementDispatch
 
 
 def segments(plant, assets):
@@ -27,7 +28,7 @@ def segments(plant, assets):
         elif kind == "recycle":
             returns[source] = target
     kinds = {key: asset["model"]["implementation"] for key, asset in assets.items()}
-    material_assets = {key for key, kind in kinds.items() if kind != "fan"}
+    material_assets = {key for key, kind in kinds.items() if kind not in {"fan", "dispatch_device"}}
     heads = set(plant["feeds"])
     if heads != material_assets - parents.keys():
         raise ValueError("Each material line needs one external feed")
@@ -84,14 +85,25 @@ def simulate(plant, assets, scenario, live_events=None):
     exhausts = {source: target for target, source in fans.items() if kinds[target] == "fan"}
     if not preheaters.keys() <= exhausts.keys():
         raise ValueError("Each cyclone preheater requires a gas connection to its exhaust fan")
-    heat_routes = {}
+    heat_routes, kiln_preheat, raw_heat = {}, {}, {}
     for connection in plant["connections"]:
         if connection["kind"] == "heat":
             source, target = (connection[name].split(".")[0] for name in ("from", "to"))
-            if not isinstance(thermal_stages.get(source), ClinkerCooler) or not isinstance(thermal_stages.get(target), RotaryKiln):
-                raise ValueError("Heat recovery requires a cooler and a rotary kiln")
-            heat_routes[source] = target
+            if isinstance(thermal_stages.get(source), ClinkerCooler) and isinstance(thermal_stages.get(target), RotaryKiln):
+                heat_routes[source] = target
+            elif isinstance(thermal_stages.get(source), RotaryKiln) and target in preheaters:
+                kiln_preheat[target] = source
+            elif source in preheaters and kinds[target] == "dryer_mill":
+                raw_heat[target] = source
+            else:
+                raise ValueError(f"Unsupported heat recovery route: {source} -> {target}")
+    kiln_heat = dict.fromkeys(kiln_preheat.values(), 1.0)
+    recovered_fraction = dict.fromkeys(raw_heat, 1.0)
     params = nominal
+    dispatch_config = plant.get("cement_dispatch")
+    dispatch = CementDispatch(dispatch_config) if dispatch_config else None
+    if dispatch and dispatch_config["clinker_source"] in routes:
+        raise ValueError("Cement dispatch source must end the clinker line")
     profile = scenario.get("profile", {})
     seed = profile.get("seed", 0)
     feed_variation = profile.get("feed_variation", {})
@@ -117,7 +129,10 @@ def simulate(plant, assets, scenario, live_events=None):
             key, name = event["target"].split(".", 1)
             if "." in name:
                 component, fault = name.split(".", 1)
-                component_models[key].inject(component, fault, event["value"], start)
+                if kinds[key] == "dispatch_device":
+                    dispatch.inject(key, component, fault, event["value"], start)
+                else:
+                    component_models[key].inject(component, fault, event["value"], start)
             else:
                 nominal[key][name] = event["value"]
         params = {**nominal, **{
@@ -134,13 +149,23 @@ def simulate(plant, assets, scenario, live_events=None):
             if key not in preheaters:
                 params[key] = runtime.apply(params[key], start)
         for key, runtime in preheaters.items():
-            params[key] = runtime.apply(params[key], start, Fan.airflow(params[exhausts[key]]))
+            params[key] = runtime.apply(params[key], start, Fan.airflow(params[exhausts[key]]),
+                                        kiln_heat.get(kiln_preheat.get(key), 1.0))
+        for mill, source in raw_heat.items():
+            fraction = min(preheaters[source].heat_fraction, preheaters[source].draft_fraction)
+            recovered_fraction[mill] = fraction
+            backup = params[mill]["backup_heat_fraction"]
+            params[mill] = {**params[mill], "heat_availability_fraction":
+                            min(params[mill]["heat_availability_fraction"], backup + (1 - backup) * fraction)}
         opening_total = sum_materials(stocks.values())
+        if dispatch:
+            opening_total = opening_total.plus(dispatch.total_stock())
         inflow = {key: Material() for key in stocks}
         outflow = {key: Material() for key in stocks}
         boundary_in, boundary_out = Material(), Material()
         evaporated = co2_released = 0.0
         data = {key: {} for key in assets}
+        dispatch_data = {}
         for key, kind in kinds.items():
             if kind == "fan":
                 data[key] = {"airflow_m3_s": Fan.airflow(params[key])}
@@ -160,6 +185,12 @@ def simulate(plant, assets, scenario, live_events=None):
                 source = Material.wet_mass(feed["flow_tph"] * hours, feed["moisture_fraction"])
             nodes = path[1:] if origin else path
             if not nodes:
+                if dispatch and origin == dispatch_config["clinker_source"]:
+                    accepted, additions, delivered, dispatch_data = dispatch.step(source, hours)
+                    outflow[origin] = accepted
+                    boundary_in = boundary_in.plus(additions)
+                    boundary_out = boundary_out.plus(delivered)
+                    continue
                 outflow[origin] = source
                 boundary_out = boundary_out.plus(source)
                 continue
@@ -239,6 +270,8 @@ def simulate(plant, assets, scenario, live_events=None):
             }
         expected = opening_total.plus(boundary_in).minus(boundary_out).minus(Material(co2_released, evaporated))
         inventory = sum_materials(stocks.values())
+        if dispatch:
+            inventory = inventory.plus(dispatch.total_stock())
         errors = inventory.minus(expected)
         if not all(isclose(v, 0, abs_tol=1e-8) for v in (errors.dry, errors.water)):
             raise RuntimeError(f"Mass balance failure at {start + step} s")
@@ -286,9 +319,20 @@ def simulate(plant, assets, scenario, live_events=None):
                     data[key]["process_notice"] = "mill_separator_unavailable"
                 elif data[fans[key]]["airflow_m3_s"] < 0.7 * params[key]["reference_airflow_m3_s"]:
                     data[key]["process_notice"] = "mill_low_airflow"
+                if key in raw_heat:
+                    fraction = recovered_fraction[key]
+                    data[key]["components"]["mill_hot_gas"] = {"heat_fraction": fraction}
+                    if fraction < 0.8 and "process_notice" not in data[key]:
+                        data[key]["process_notice"] = "mill_kiln_heat_reduced"
+        for key in kiln_heat:
+            reference = params[key]["heat_reference_tph"]
+            kiln_heat[key] = min(1.0, data[key]["inlet_tph"] / reference) * (1 - thermal_stages[key].severity("main_burner", "fuel_loss"))
         for key in component_models:
             components = sampled_components(data[key]["components"], f"{seed}:{key}:sensor", start + step)
             measured.setdefault(key, {})["components"] = components
+        if dispatch:
+            data.update(dispatch_data)
+            measured.update(dispatch.measurements(dispatch_data, seed, start + step))
         yield {"time_s": start + step, "events": interval_events, "equipment": data,
                "measurements": measured,
                "balance": {"dry_residual_t": errors.dry, "water_residual_t": errors.water,

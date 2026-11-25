@@ -32,6 +32,7 @@ SCENARIOS = (
     "preheater_cyclone_blockage", "calciner_fuel_loss", "kiln_drive_trip", "kiln_burner_fuel_loss",
     "cooler_airflow_loss", "cooler_grate_jam", "kiln_id_fan_trip", "kiln_id_fan_derate",
     "clinker_silo_outlet_blockage", "clinker_silo_level_signal_loss",
+    "cement_mill_a_trip", "cement_mill_b_trip", "bag_packer_jam", "bulk_loading_stop",
 )
 CONFIGS = ROOT / "configs"
 PAGES = {

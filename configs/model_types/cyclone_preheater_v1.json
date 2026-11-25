@@ -3,6 +3,8 @@
   "implementation": "throughput",
   "component_model": "cyclone_preheater",
   "ports": {
+    "kiln_heat_in": ["in", "heat"],
+    "exhaust_heat_out": ["out", "heat"],
     "inlet": [
       "in",
       "material"

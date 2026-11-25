@@ -24,8 +24,10 @@ class KilnStage(BulkComponents):
 class CyclonePreheater(KilnStage):
     FAULTS = {"cyclone": {"blockage"}}
 
-    def apply(self, parameters, time_s, exhaust_m3_s):
+    def apply(self, parameters, time_s, exhaust_m3_s, kiln_heat_fraction=1.0):
         draft_fraction = min(1, exhaust_m3_s / parameters["reference_exhaust_m3_s"])
+        self.draft_fraction = draft_fraction
+        self.heat_fraction = kiln_heat_fraction
         blockage = self.severity("cyclone", "blockage")
         self.differential_pressure = parameters["cyclone_dp_pa"] * draft_fraction ** 2 * (1 + 3 * blockage)
         self.low_draft = draft_fraction < parameters["minimum_draft_fraction"]
@@ -43,8 +45,9 @@ class CyclonePreheater(KilnStage):
             values["process_notice"] = "kiln_limited_draft"
         self.report(values, {
             "cyclone": {"differential_pressure_pa": self.differential_pressure},
-            "preheater_outlet": {"temperature_c": self.parameters["outlet_temperature_c"]
+            "preheater_outlet": {"temperature_c": 25 + (self.parameters["outlet_temperature_c"] - 25) * self.heat_fraction
                                  if values["outlet_tph"] else None},
+            "preheater_exhaust_heat": {"heat_fraction": min(self.heat_fraction, self.draft_fraction)},
         })
 
 

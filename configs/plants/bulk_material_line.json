@@ -86,6 +86,7 @@
         "target_moisture_fraction": 0.005,
         "evaporation_capacity_tph": 5,
         "heat_availability_fraction": 1,
+        "backup_heat_fraction": 0.65,
         "reference_airflow_m3_s": 80,
         "motor_current_a": 320,
         "grinding_pressure_bar": 105,
@@ -153,6 +154,7 @@
         "co2_release_fraction": 0.07,
         "fuel_per_feed": 0.035,
         "fuel_energy_kwh_t": 6500,
+        "heat_reference_tph": 65,
         "outlet_temperature_c": 1450,
         "rotation_rpm": 3
       }
@@ -180,7 +182,7 @@
     {
       "id": "clinker_silo",
       "model_type": "feed_bin_v1",
-      "parameters": {"capacity_t": 450, "initial_t": 75, "initial_moisture_fraction": 0, "outlet_capacity_tph": 60}
+      "parameters": {"capacity_t": 450, "initial_t": 75, "initial_moisture_fraction": 0, "outlet_capacity_tph": 90}
     }
   ],
   "connections": [
@@ -236,6 +238,8 @@
     {"from": "clinker_cooler.outlet", "to": "clinker_silo.inlet", "kind": "material"},
     {"from": "preheater.gas_out", "to": "kiln_id_fan.air_in", "kind": "gas"},
     {"from": "clinker_cooler.heat_out", "to": "rotary_kiln.heat_in", "kind": "heat"},
+    {"from": "rotary_kiln.exhaust_heat_out", "to": "preheater.kiln_heat_in", "kind": "heat"},
+    {"from": "preheater.exhaust_heat_out", "to": "drying_mill.heat_in", "kind": "heat"},
     {
       "from": "separator.coarse_out",
       "to": "drying_mill.recycle_in",
@@ -246,5 +250,25 @@
       "to": "drying_mill.air_in",
       "kind": "gas"
     }
-  ]
+  ],
+  "cement_dispatch": {
+    "clinker_source": "clinker_silo",
+    "silo": "SL-401",
+    "grades": {
+      "A": {"capacity_t": 90, "initial_t": 25},
+      "B": {"capacity_t": 90, "initial_t": 25}
+    },
+    "mills": [
+      {"grade": "A", "capacity_tph": 36, "additive_per_clinker": 0.065, "fines_fraction": 0.58,
+       "airflow_m3_s": 55, "equipment": {"feeder": "WF-401A", "mill": "CM-401A", "separator": "SP-401A", "fan": "FN-401A"}},
+      {"grade": "B", "capacity_tph": 35, "additive_per_clinker": 0.09, "fines_fraction": 0.56,
+       "airflow_m3_s": 53, "equipment": {"feeder": "WF-401B", "mill": "CM-401B", "separator": "SP-401B", "fan": "FN-401B"}}
+    ],
+    "dispatch": [
+      {"grade": "A", "demand_tph": 34, "bag_mass_kg": 50,
+       "equipment": {"feeder": "FD-501", "packer": "PK-501", "conveyor": "BC-501", "loader": "LD-501"}},
+      {"grade": "B", "demand_tph": 33,
+       "equipment": {"feeder": "FD-502", "spout": "SP-502", "scale": "WS-502"}}
+    ]
+  }
 }

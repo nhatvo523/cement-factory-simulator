@@ -51,6 +51,7 @@ COMPONENT_ANALOG_SIGNALS = {
     "differential_pressure_pa": {"relative_amplitude": 0.008, "period_s": 170},
     "draft_suction_pa": {"relative_amplitude": 0.008, "period_s": 171},
     "thermal_power_kw": {"relative_amplitude": 0.008, "period_s": 183},
+    "heat_fraction": {"relative_amplitude": 0.006, "period_s": 187},
     "pressure_bar": {"relative_amplitude": 0.006, "period_s": 180},
     "vibration_mm_s": {"relative_amplitude": 0.01, "period_s": 135},
 }

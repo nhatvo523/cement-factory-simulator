@@ -3,6 +3,7 @@
   "implementation": "throughput",
   "component_model": "rotary_kiln",
   "ports": {
+    "exhaust_heat_out": ["out", "heat"],
     "inlet": [
       "in",
       "material"
@@ -17,6 +18,7 @@
     ]
   },
   "parameters": {
+    "heat_reference_tph": {"min": 0.001, "unit": "t/h"},
     "capacity_tph": {
       "unit": "t/h",
       "min": 0,

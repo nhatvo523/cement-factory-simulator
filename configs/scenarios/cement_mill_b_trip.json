@@ -1,0 +1,12 @@
+{
+  "id": "cement_mill_b_trip",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "CM-401B.drive.unavailable",
+      "value": 1
+    }
+  ]
+}

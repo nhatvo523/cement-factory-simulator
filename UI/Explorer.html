@@ -99,7 +99,7 @@ const paths = [
   ['cement','SP-401B','SL-401','FD-502','SP-502'],
   ['recycle','SP-201','RM-201'],['recycle','SP-401A','CM-401A'],['recycle','SP-401B','CM-401B'],
   ['gas','FN-201','RM-201'],['gas','FN-401A','CM-401A'],['gas','FN-401B','CM-401B'],
-  ['gas','PH-301','CF-301'],['heat','CL-301','KL-301'],['heat','KL-301','PH-301'],
+  ['gas','PH-301','CF-301'],['heat','CL-301','KL-301'],['heat','KL-301','PH-301'],['heat','PH-301','RM-201'],
   ['control','WS-502','FD-502']
 ];
 const equipmentEdges = paths.flatMap(([kind,...route]) => route.slice(1).map((to,i) => ({from:route[i],to,kind})));
@@ -369,11 +369,27 @@ function lineGraph(d) {
     edges.push(ed(main[2].id,main[0].id,'control','Đạt khối lượng đặt: dừng cấp','M'+xmid(2)+' 190V125H'+xmid(0)+'V190',xmid(0)+16,112));
     edges.push(ed(main[1].id,main[2].id,'control','Cân khối lượng xe'));
   }
+  const supply = {'Z01-L02':'BN-101','Z03-L01':'SL-302','Z03-L02':'SL-302','Z04-L01':'SL-401','Z04-L02':'SL-401'}[d.id];
+  if (supply) {
+    nodes.push(nd(supply,xmid(0)-74,368,149,102,supply));
+    edges.push(ed(supply,main[0].id,d.id==='Z01-L02'?'raw':d.id.startsWith('Z03')?'clinker':'cement'));
+  }
+  if (d.id === 'Z01-L02') {
+    const inlet=xmid(1)-26;
+    nodes.push(nd('PH-301',xmid(1)-74,20,149,88,'PH-301','Nguồn khí nóng'));
+    edges.push(ed('PH-301',main[1].id,'heat','Nhiệt sấy','M'+inlet+' 108V190',inlet-66,150));
+  }
+  if (d.id === 'Z02-L01') {
+    nodes.push(nd('RM-201',xmid(2)-74,360,149,104,'RM-201','Sấy liệu Zone 1'));
+    edges.push(ed(main[1].id,'RM-201','heat','Khí nóng sang nghiền liệu','M'+(xmid(1)+43)+' 302V328H'+xmid(2)+'V360',xmid(1)+55,319));
+  }
   return graph(nodes,edges,width,510);
 }
 
 function processGraph(d) {
-  const kind = d.id === rawSupport ? 'gas' : flowForLine(d.parent);
+  const kilnFeed = d.parent==='Z02-L01' && /-P0[1-4]$/.test(d.id);
+  const kind = d.id===rawSupport ? 'gas' : kilnFeed ? 'meal' : flowForLine(d.parent);
+  const outputKind = d.id==='Z02-L01-P04' ? 'clinker' : kind;
   const main = d.equipment || [];
   const isRecycle = d.id.endsWith('-P03') && (d.parent === 'Z01-L02' || d.parent.startsWith('Z03'));
   const cin = {...nd('@in',24,153,232,128),label:d.input || 'Xem đặc tả'};
@@ -389,10 +405,12 @@ function processGraph(d) {
       if (main.length>1) edges.push(ed(main[0],main[1],'recycle','Hạt thô hồi lưu',null,510,145));
     } else if (d.id === 'Z01-L02-P02' || (d.parent.startsWith('Z03') && d.id.endsWith('P02')) || d.id === 'Z02-L01-P02') {
       edges.push(ed(main[0],'@out',kind,'Dòng vật liệu','M484 198V132H778V198H804',643,120));
-      if (main.length>1) edges.push(ed(main[1],main[0],'gas','Hỗ trợ dòng khí',null,495,293));
+      if (main.length>1) edges.push(d.id==='Z02-L01-P02'
+        ? ed(main[0],main[1],'gas','Khí thải',null,495,293)
+        : ed(main[1],main[0],'gas','Hỗ trợ dòng khí',null,495,293));
     } else {
       main.slice(1).forEach((id,i)=>edges.push(ed(main[i],id,kind)));
-      edges.push(ed(main.at(-1),'@out',kind));
+      edges.push(ed(main.at(-1),'@out',outputKind));
     }
   }
   if (isRecycle && main.length === 1) {
@@ -560,10 +578,9 @@ const simulationAssets = {
   'RC-101':'reclaimer','BN-101':'feed_bin','WF-201':'weigh_feeder',
   'RM-201':'drying_mill','SP-201':'separator','FN-201':'process_fan',
   'SL-301':'product_silo','KF-301':'downstream_feeder','PH-301':'preheater','PC-301':'precalciner',
-  'KL-301':'rotary_kiln','CL-301':'clinker_cooler','CF-301':'kiln_id_fan','SL-302':'clinker_silo'
-};
-const simulationScenarios = {
-  downstream_feed_stop:'Hạ nguồn dừng nhận liệu'
+  'KL-301':'rotary_kiln','CL-301':'clinker_cooler','CF-301':'kiln_id_fan','SL-302':'clinker_silo',
+  ...Object.fromEntries(['WF-401A','CM-401A','SP-401A','FN-401A','WF-401B','CM-401B','SP-401B','FN-401B',
+    'SL-401','FD-501','PK-501','BC-501','LD-501','FD-502','SP-502','WS-502'].map(id=>[id,id]))
 };
 const operationComponents = {
   main_motor:['Motor chính',{current_a:['Dòng điện','A'],winding_temperature_c:['Nhiệt độ cuộn dây','°C']}],
@@ -607,7 +624,10 @@ const operationComponents = {
   grate_drive:['Truyền động ghi',{speed_m_s:['Tốc độ ghi','m/s']}],
   cooler_outlet:['Đầu ra giàn nguội',{temperature_c:['Nhiệt độ clinker','°C']}],
   cooler_heat_recovery:['Thu hồi nhiệt',{thermal_power_kw:['Công suất nhiệt ước tính','kW']}],
-  draft_sensor:['Điểm đo áp suất',{draft_suction_pa:['Độ lớn áp suất hút','Pa']}]
+  draft_sensor:['Điểm đo áp suất',{draft_suction_pa:['Độ lớn áp suất hút','Pa']}],
+  mill_hot_gas:['Nguồn khí nóng từ PH-301',{heat_fraction:['Nhiệt khả dụng tương đối','%']}],
+  preheater_exhaust_heat:['Nhánh khí nóng đến RM-201',{heat_fraction:['Nhiệt khả dụng tương đối','%']}],
+  drive:['Truyền động',{}],filling_head:['Đầu nạp bao',{}],loading_spout:['Ống xuất rời',{}]
 };
 const equipmentFaults = {
   'CR-101':[
@@ -685,7 +705,11 @@ const equipmentFaults = {
   'SL-302':[
     ['clinker_silo_outlet_blockage','outlet_chute','bridging','Tắc cửa xả clinker'],
     ['clinker_silo_level_signal_loss','level_sensor','signal_loss','Mất tín hiệu mức']
-  ]
+  ],
+  'CM-401A':[['cement_mill_a_trip','drive','unavailable','Trip truyền động']],
+  'CM-401B':[['cement_mill_b_trip','drive','unavailable','Trip truyền động']],
+  'PK-501':[['bag_packer_jam','filling_head','unavailable','Kẹt đầu nạp bao']],
+  'SP-502':[['bulk_loading_stop','loading_spout','unavailable','Ống xuất rời không sẵn sàng']]
 };
 const protectionLabels = {
   motor_overcurrent:'Quá dòng motor',low_oil_pressure:'Áp suất dầu thấp',
@@ -703,7 +727,8 @@ const processNotices = {
   mill_low_airflow:'Khí sấy thấp từ quạt nghiền liệu',
   mill_separator_unavailable:'Máy phân ly chưa sẵn sàng',
   kiln_low_draft:'Lực hút hệ nung thấp · Ngừng cấp bột liệu',
-  kiln_limited_draft:'Lực hút hệ nung giảm · Giới hạn cấp bột liệu'
+  kiln_limited_draft:'Lực hút hệ nung giảm · Giới hạn cấp bột liệu',
+  mill_kiln_heat_reduced:'Nhiệt khí từ hệ nung giảm · Dùng nguồn nhiệt dự phòng'
 };
 const waitingLabels = {
   reclaimer_discharge_unavailable:'Phễu nhận chưa sẵn sàng',
@@ -719,6 +744,7 @@ const simulationMetrics = {
   reclaimed_total_t:['Đã thu hồi trong phiên','t'],
   belt_level_fraction:['Mức chứa trên băng','%'],belt_moisture_fraction:['Độ ẩm liệu trên băng','%'],
   level_fraction:['Mức đo','%'],airflow_m3_s:['Lưu lượng khí','m³/s'],
+  bags_per_min:['Tốc độ đóng bao','bao/phút'],dispatch_flow_tph:['Tốc độ nạp xe suy từ cân','t/h'],
   inlet_moisture_fraction:['Độ ẩm đầu vào','%']
 };
 const equipmentOverview = {
@@ -755,15 +781,15 @@ function simulationPanel() {
   const assetFaults=equipmentFaults[simulation.asset];
   const faults=assetFaults
     ? assetFaults.map(([key,component,,label])=>[key,operationComponents[component][0]+' · '+label])
-    : Object.entries(simulationScenarios);
+    : [];
   return '<div id="simulation-panel" class="simulation-panel"><header data-operation-handle><div><h2 id="operation-title">Thông số vận hành</h2>'+
     '<p class="muted">'+esc(simulation.asset+' · '+title(simulation.asset))+'</p></div>'+
     '<button type="button" data-simulation-close aria-label="Đóng thông số vận hành">Đóng</button></header>'+
     '<div id="simulation-values"></div>'+
-    (available?'<fieldset class="simulation-faults" id="simulation-faults"><legend>Chèn lỗi mô phỏng</legend>'+
+    (available?'<fieldset class="simulation-faults" id="simulation-faults"><legend>'+(faults.length?'Chèn lỗi mô phỏng':'Phiên mô phỏng')+'</legend>'+
     faults.map(([key,label])=>'<label><input type="checkbox" name="simulation-fault" value="'+key+'"> '+esc(label)+
       ' <small data-fault-status="'+key+'"></small></label>').join('')+
-    '<div class="links"><button type="button" data-inject-faults>Áp dụng lỗi đã chọn</button>'+
+    '<div class="links">'+(faults.length?'<button type="button" data-inject-faults>Áp dụng lỗi đã chọn</button>':'')+
     '<button type="button" data-reset-operation>Đặt lại mô phỏng</button></div>'+
     '<p id="simulation-feedback" role="status" class="muted"></p></fieldset>':'')+'</div>';
 }
@@ -832,7 +858,7 @@ function showSimulationFrame() {
     target.innerHTML=note('Thiết bị chưa có dữ liệu trong lượt chạy này.');
     return;
   }
-  const {components={},...readings}=frame.measurements[key] || {};
+  const {components={},grades,...readings}=frame.measurements[key] || {};
   if (simulation.asset==='BC-101') {
     readings.belt_inventory_t=readings.inventory_t;
     readings.belt_level_fraction=readings.level_fraction;
@@ -848,6 +874,9 @@ function showSimulationFrame() {
   if (values.process_notice) rows.push(['Điều kiện công nghệ',processNotices[values.process_notice] || values.process_notice]);
   if (values.trip_reason) rows.push(['Bảo vệ tác động',protectionLabels[values.trip_reason] || values.trip_reason]);
   if (values.waiting_reason) rows.push(['Lý do chờ',waitingLabels[values.waiting_reason] || values.waiting_reason]);
+  if (grades) for (const [grade,reading] of Object.entries(grades)) {
+    rows.push(['Tồn kho mác '+grade,simulationNumber.format(reading)+' t']);
+  }
   const componentTables=Object.entries(components).map(([key,signals])=>{
     const definition=operationComponents[key];
     if (!definition) return '';
@@ -874,7 +903,8 @@ function updateFaultControls() {
   const controls=$('simulation-faults');
   if (!controls) return;
   controls.disabled=!simulation.frame;
-  controls.querySelector('[data-inject-faults]').disabled=simulation.loading;
+  const inject=controls.querySelector('[data-inject-faults]');
+  if (inject) inject.disabled=simulation.loading;
   controls.querySelector('[data-reset-operation]').disabled=simulation.loading;
   for (const input of controls.querySelectorAll('input[name="simulation-fault"]')) {
     const active=simulation.faults.has(input.value);
@@ -920,7 +950,7 @@ function showLiveEquipmentState() {
   if (!simulation.frame || demoState.enabled) return;
   for (const node of $('canvas').querySelectorAll('[data-node]')) {
     const id=node.dataset.node;
-    const assets=equipmentFaults[id]?[id]:(record.get(id)?.equipment || []).filter(key=>equipmentFaults[key]);
+    const assets=simulationAssets[id]?[id]:(record.get(id)?.equipment || []).filter(key=>simulationAssets[key]);
     const states=assets.map(key=>[key,simulation.frame.equipment[simulationAssets[key]]]).filter(([,values])=>values);
     if (!states.length) continue;
     node.classList.toggle('live-running',states.every(([,values])=>['RUNNING','AVAILABLE'].includes(values.operating_state)));
@@ -963,8 +993,8 @@ function renderInspector(d) {
     out+=block('Mô hình vật lý','<div class="links">'+modelLinks(d.models)+'</div>'+para(d.matrix?.[2]));
     out+=linked('Component',list('Component',d.id).map(c=>link(c.id,c.name)));
     out+=linked('Process tham gia',d.processes.map(codeLink));
-    out+=linked('Cấp vào / hồi về thiết bị',unique(connections.filter(e=>e.to===d.id).map(e=>e.from)).map(codeLink));
-    out+=linked('Nhận từ thiết bị',unique(connections.filter(e=>e.from===d.id).map(e=>e.to)).map(codeLink))+chosenFaults(d);
+    out+=linked('Nguồn cấp vào thiết bị',unique(connections.filter(e=>e.to===d.id).map(e=>e.from)).map(codeLink));
+    out+=linked('Thiết bị nhận dòng ra',unique(connections.filter(e=>e.from===d.id).map(e=>e.to)).map(codeLink))+chosenFaults(d);
   }
   if (d.type==='Component') {
     const parent=record.get(d.parent);
@@ -1356,7 +1386,7 @@ try {
     if (location.protocol!=='file:') {
       loadOperation();
       setInterval(()=>{
-        if (!simulation.session || simulation.asset || /^(Z01-L0[12]|Z02-L01)/.test(selected)) loadOperation();
+        if (!simulation.session || simulation.asset || /^Z0[1-4]-L0[12]/.test(selected)) loadOperation();
       },1000);
     }
   }

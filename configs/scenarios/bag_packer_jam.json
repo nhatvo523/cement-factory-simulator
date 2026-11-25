@@ -1,0 +1,12 @@
+{
+  "id": "bag_packer_jam",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "target": "PK-501.filling_head.unavailable",
+      "value": 1
+    }
+  ]
+}

@@ -31,7 +31,7 @@ class SimulationTest(unittest.TestCase):
         for case in ("baseline", "crusher_stop", "fan_derate", "downstream_feed_stop"):
             frames = self.run_case(case, operating_profile=True)
             for frame in frames:
-                self.assertEqual(len(frame["measurements"]), 17)
+                self.assertEqual(len(frame["measurements"]), 33)
                 self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
                 self.assertAlmostEqual(frame["balance"]["water_residual_t"], 0)
             self.assertEqual(frames[:10], baseline[:10])
@@ -321,6 +321,44 @@ class SimulationTest(unittest.TestCase):
         self.assertGreater(stages["clinker_silo"]["inlet_tph"], 0)
         self.assertEqual(stages["clinker_silo"]["outlet_tph"], 0)
         self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
+
+    def test_kiln_heat_loss_propagates_to_preheater_and_raw_mill(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        baseline = handler.operation({})["frames"][11]["equipment"]
+        trip = handler.operation({"fault": ["kiln_drive_trip@600"]})["frames"][11]["equipment"]
+        derate = handler.operation({"fault": ["kiln_id_fan_derate@600"]})["frames"][11]["equipment"]
+        self.assertLess(trip["drying_mill"]["fresh_inlet_tph"], baseline["drying_mill"]["fresh_inlet_tph"])
+        self.assertEqual(trip["drying_mill"]["process_notice"], "mill_kiln_heat_reduced")
+        self.assertEqual(trip["drying_mill"]["components"]["mill_hot_gas"]["heat_fraction"], 0)
+        self.assertLess(derate["preheater"]["components"]["preheater_outlet"]["temperature_c"],
+                        baseline["preheater"]["components"]["preheater_outlet"]["temperature_c"])
+
+    def test_zone_four_stoppage_fills_only_its_grade_and_blocks_its_mill(self):
+        scenario = load_scenario(ROOT / "configs/scenarios/bag_packer_jam.json", self.assets)
+        scenario["duration_s"] = 10800
+        frames = list(simulate(self.plant, self.assets, scenario))
+        first = frames[10]["equipment"]
+        final = frames[-1]["equipment"]
+        self.assertEqual(first["PK-501"]["outlet_tph"], 0)
+        self.assertGreater(first["SP-502"]["outlet_tph"], 0)
+        self.assertAlmostEqual(final["SL-401"]["grades"]["A"], 90)
+        self.assertLess(final["SL-401"]["grades"]["B"], 90)
+        self.assertEqual(final["SP-401A"]["outlet_tph"], 0)
+        self.assertGreater(final["SP-401B"]["outlet_tph"], 0)
+        self.assertGreater(final["clinker_silo"]["inventory_t"], first["clinker_silo"]["inventory_t"])
+        for frame in frames:
+            self.assertAlmostEqual(frame["balance"]["dry_residual_t"], 0)
+            self.assertAlmostEqual(frame["balance"]["water_residual_t"], 0)
+
+    def test_cement_mill_trip_still_allows_dispatch_from_opening_inventory(self):
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        frames = handler.operation({"fault": ["cement_mill_a_trip@600"]})["frames"]
+        first = frames[10]["equipment"]
+        self.assertEqual(first["CM-401A"]["operating_state"], "TRIPPED")
+        self.assertEqual(first["SP-401A"]["outlet_tph"], 0)
+        self.assertGreater(first["PK-501"]["outlet_tph"], 0)
+        self.assertEqual(frames[-1]["equipment"]["PK-501"]["outlet_tph"], 0)
+        self.assertGreater(frames[-1]["equipment"]["SP-502"]["outlet_tph"], 0)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
   "id": "vertical_raw_mill_v1",
   "implementation": "dryer_mill",
   "ports": {
+    "heat_in": ["in", "heat"],
     "inlet": [
       "in",
       "material"
@@ -20,6 +21,7 @@
     ]
   },
   "parameters": {
+    "backup_heat_fraction": {"min": 0, "max": 1},
     "capacity_tph": {
       "unit": "t/h",
       "min": 0,
