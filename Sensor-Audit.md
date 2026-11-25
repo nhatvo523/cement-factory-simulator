@@ -61,6 +61,28 @@ Các giả định chính gồm hệ số nhiệt theo suất nhiên liệu, ph�
 - Mỗi tag đo có cấu hình `conditioning` ngay trong danh mục. Cờ `signal_conditioning.enabled` bật mặc định và tắt được để nhận lại số đo Pha B đã sửa bypass. `noise_enabled` và `seed` chỉ đổi nhiễu thiết bị đo. Vân tay vật liệu và nhiệt/chất lượng được lưu và đối chiếu riêng.
 - Các thông số đo là giả định. Nhiệt độ có hằng số đầu đo mặc định 20 s và lấy mẫu 5 s. Dòng điện có hằng số 0,15 s, áp suất 0,25 s, mức 8 s. Thời gian RUN nhả 3 s, cảnh báo thông thường tác động sau 5 s và nhả sau 8 s. Cần hiệu chỉnh theo thiết bị hoặc historian thật trước khi dùng để đánh giá vận hành một nhà máy cụ thể.
 
+## Z01 — Mở rộng tín hiệu và cảnh báo
+
+Z01 tăng từ **60 lên 69 tag vận hành** và từ **12 lên 47 tag cảnh báo**. Chín tag mới đều đánh dấu `assumed: true`.
+
+| Thiết bị | Tag mới | Nguồn và giả định |
+|---|---|---|
+| BC-101 | Dòng motor băng tải | Suy từ khối lượng liệu trên băng và phản hồi tốc độ. Khi motor có dấu hiệu quay nhưng bị chặn xả, liệu trên băng vẫn tạo tải. |
+| RC-101 | Lưu lượng cân băng thu hồi | Dùng kênh lưu lượng ra đã lấy mẫu, giả định có cân băng trên tuyến thu hồi. |
+| WF-201 | Dòng motor cân định lượng | Dùng lưu lượng vật lý của solver và phản hồi tốc độ, không dùng số cân đã bị bias. |
+| RM-201 | ΔP mill và nhiệt độ ổ trục | ΔP gồm thành phần bình phương lưu lượng khí và thành phần tương tác gió × tải liệu. Nhiệt ổ trục suy từ tải motor với hằng số quá trình 180 s trước quán tính đầu đo. |
+| SP-201 | Dòng motor phân ly | Phản hồi tốc độ phân biệt quay và dừng. Khi quay, lưu lượng liệu làm tăng dòng trên mức không tải. |
+| FN-201 | Dòng motor, áp suất gauge cửa hút, rung RMS | Dòng tăng theo tải khí. Draft cửa hút gồm lực hút cục bộ và phần ảnh hưởng có trọng số từ áp suất top PH-301 và draft CF-301, giảm theo vị trí bypass. Rung suy theo tải khí và mức suy giảm impeller. |
+
+Ngưỡng **240 °C cũ** gắn vào `RM-201.gas_outlet_temperature_c`. Giữ L 75 °C và sửa H thành 120 °C. Khí vào có L 195 °C và H riêng 400 °C. Tag khí ra quy chiếu nguồn nhiệt ra trong solver về mốc chỉ thị giả định 95 °C, với hệ số 0,6 quanh mốc nguồn 170 °C. Solver, cân bằng sấy và các vân tay không dùng giá trị chỉ thị này. Một nghiên cứu hiện trường ghi nhận nhiệt khí ra mill 88 °C ở ca được khảo sát. [Nghiên cứu năng lượng nhà máy xi măng](https://dyuthi.cusat.ac.in/jspui/bitstream/purl/4727/1/Dyuthi-T1833.pdf)
+
+- **Cảnh báo nhiệt độ cuộn dây và ổ trục H/HH** vẫn hoạt động khi dừng hoặc khởi động. CR-101 giữ cuộn dây 95/105 °C và ổ trục 78/88 °C. RM-201 và FN-201 dùng 75/85 °C. Debounce nhiệt 15/25 s.
+- **Cảnh báo phụ thuộc vận hành** chỉ áp dụng ở RUNNING sau thời gian khởi động 120 s. Dòng motor H ở 110% định mức. Dầu CR-101 L/LL ở 2,5/2,0 bar. Thủy lực con lăn RM-201 L/H ở 85/125 bar. ΔP mill L/H ở 2.000/6.000 Pa. Cảnh báo ΔP và nhiệt khí RM-201 yêu cầu còn gió. Debounce dòng, áp và rung là 5/8 s.
+- **Rung RMS** dùng ba đường nền giả định riêng. CR-101 là 2,8 mm/s với hệ số H/HH 1,60/2,35. RM-201 là 2,5 mm/s với 1,70/2,60. FN-201 là 2,0 mm/s với 1,80/2,90.
+- Có **6 cảnh báo lỗi đầu đo BAD** cho chất lượng rung CR-101 và RM-201, cân băng BC-101, encoder RC-101, mức BN-101 và load cell WF-201. Một chỉ thị BAD che cảnh báo quá trình của đúng phép đo liên kết. Cảnh báo lỗi đầu đo vẫn hoạt động khi thiết bị dừng.
+
+Hiệu chỉnh sau gồm đường nền rung, ngưỡng cuộn dây CR-101, quan hệ chiều cao radar–thể tích của BN-101 và các ô SL-401 (phần trụ và phần côn), mốc nhiệt ra RM-201 và hệ số ghép draft qua damper. Chưa mô tả elevator trong RM-201. Hoãn vị trí ST-101 và ngưỡng cảnh báo áp suất cửa hút FN-201.
+
 ## Bề mặt dữ liệu trước Bước 1
 
 | Bề mặt | Dữ liệu hiện có |

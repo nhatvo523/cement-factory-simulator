@@ -81,9 +81,14 @@ def alarm_value(value, rule, state, mode, time_s, step_s):
     if value is None or limit is None:
         state.clear()
         return False
-    high = rule["severity"].startswith("H")
-    active = state.get("value", False)
-    band = rule["deadband"] if active else 0
-    target = value >= limit - band if high else value <= limit + band
+    if rule["severity"] == "BAD":
+        target = value == limit
+    else:
+        if isinstance(limit, dict):
+            limit = limit["reference"] * limit["multiplier"]
+        high = rule["severity"].startswith("H")
+        active = state.get("value", False)
+        band = rule["deadband"] if active else 0
+        target = value >= limit - band if high else value <= limit + band
     return debounce(state, target, time_s, time_s - step_s, rule["debounce_on_s"],
                     rule["debounce_off_s"], initial=False)

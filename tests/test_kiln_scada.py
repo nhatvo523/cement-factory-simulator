@@ -21,7 +21,7 @@ class KilnScadaTest(unittest.TestCase):
 
     def test_phase_a_tags_have_assumed_metadata_and_replay_deterministically(self):
         baseline = self.results["baseline"]
-        tags = [tag for tag in baseline["tags"] if tag.get("assumed") and "normal" in tag]
+        tags = [tag for tag in baseline["tags"] if tag["device_id"].endswith("-301") and "normal" in tag]
         self.assertEqual(len(tags), 22)
         for tag in tags:
             self.assertTrue({"unit", "range", "normal", "alarm", "trip"} <= tag.keys())

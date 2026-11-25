@@ -86,7 +86,7 @@ class SignalConditioningTest(unittest.TestCase):
         state = {}
         readings = [conditioned_value(v, raw, state, t, 1, 0, False)
                     for t, v in enumerate([-10, 123.46, 123.46, 123.46, 600, 600, 600], 1)]
-        self.assertEqual(readings, [0, 0, 123.5, 123.5, 123.5, 123.5, 500])
+        self.assertEqual(readings, [0, 0, 123.5, 123.5, 123.5, 123.5, raw["conditioning"]["range_max"]])
 
     def test_debounce_deadband_and_mode_mask(self):
         tag = self.tags["KF-301.run_feedback"]

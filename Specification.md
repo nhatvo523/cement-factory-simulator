@@ -1518,6 +1518,14 @@ Cảnh báo L/LL/H/HH có tag riêng, deadband và thời gian tác động/nh�
 
 Không có tag online độ ẩm bột liệu hoặc free lime. Nhiệt khí ra mill là đại lượng đo gián tiếp cho sấy. Lab free lime chọn `automatic` (10/5 phút) hoặc `manual_hourly` (60/30 phút) qua cấu hình plant, mặc định giả định dùng phân tích tự động. Sửa điều kiện bypass trước Bước 3: khi lò ngừng cấp liệu, chế độ nội bộ là `NO_KILN_GAS` và damper không bypass. Hai vân tay hồi quy được chốt riêng sau sửa điều kiện này. [Sensor-Audit.md](Sensor-Audit.md) · [Báo cáo bypass và đối chiếu](Thermal-Coupling-Report.md)
 
+### Z01 — Tín hiệu suy ra và cảnh báo analog
+
+Z01 công bố 69 tag vận hành và 47 tag cảnh báo. Các tag mới gồm dòng băng BC-101, lưu lượng cân băng thu hồi RC-101, dòng cân WF-201, ΔP và nhiệt ổ trục RM-201, dòng motor SP-201, cùng dòng, draft cửa hút và rung FN-201. Cấu hình suy ra, dải đo, giá trị bình thường và ngưỡng ở danh mục tag. Tín hiệu suy ra chỉ áp dụng sau khi solver hoàn tất. Nhiệt độ ổ trục mill có quán tính trước khi xử lý đo lường. Mức BN-101 vẫn dựa trên tỷ lệ đầy mô phỏng. Hiệu chỉnh radar cần hình học phần trụ và phần côn của BN-101, tương tự từng ô SL-401.
+
+Draft FN-201 có thành phần cục bộ theo bình phương lưu lượng quạt. Thành phần ghép nhận 10% từ áp suất tầng cao nhất PH-301 và 16% từ áp suất cửa hút CF-301 theo giả định, nhân với phần hành trình damper còn nối tới tuyến sấy. Khi lò đã ngừng cấp liệu hoặc bypass mở hết, thành phần ghép về 0. Trong hành trình trở lại, nó tăng dần theo độ mở về tuyến sấy.
+
+Nhiệt khí ra RM-201 dùng chỉ thị giả định quanh 95 °C và cảnh báo L/H 75/120 °C. H khí vào là 400 °C. Nhiệt cuộn dây và ổ trục H/HH hoạt động mọi chế độ với debounce 15/25 s. Các cảnh báo dòng, rung, dầu, thủy lực và ΔP dùng debounce 5/8 s và được che khi dừng hoặc khởi động. Đối với phép đo có thẻ chất lượng, BAD che cảnh báo quá trình liên kết và phát cảnh báo lỗi đầu đo riêng. Các mức cảnh báo do simulator công bố không ra lệnh trip. Danh sách ngưỡng, hệ số rung và điểm cần hiệu chỉnh có trong [Sensor-Audit.md](Sensor-Audit.md).
+
 ## 4. Trạng thái triển khai
 
 Tài liệu là **đặc tả mô phỏng**, chưa phải bằng chứng hệ thống simulation đã chạy. Engineering Explorer HTML là công cụ duyệt kiến trúc; dữ liệu mô phỏng, phương trình đã hiệu chỉnh, điều khiển thời gian thực và kiểm thử end-to-end là các phần cần triển khai/kiểm chứng riêng.

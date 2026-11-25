@@ -24,6 +24,8 @@ def load_tag_config(model_directory, assets, plant=None, conditioning_enabled=No
             continue
         source = tag["source"]
         dependencies = {source["asset"]}
+        if permissive := tag.get("rule", {}).get("permissive"):
+            dependencies.add(permissive["asset"])
         model = source.get("passive_model", {})
         for term in model.get("terms", []):
             dependencies.update(factor["asset"] for factor in term["factors"])
@@ -35,6 +37,8 @@ def load_tag_config(model_directory, assets, plant=None, conditioning_enabled=No
     for tag in tags:
         if tag.get("channel") == "alarm" and (tag["device_id"], tag["rule"]["input_tag"]) not in measurements:
             raise ValueError(f"Alarm references missing SCADA measurement: {tag['tag_id']}")
+        if (quality := tag.get("quality_tag")) and (tag["device_id"], quality) not in measurements:
+            raise ValueError(f"Measurement references missing SCADA quality tag: {tag['tag_id']}")
     return {**config, "tags": tags}
 
 
@@ -42,6 +46,11 @@ def read_source(frame, source):
     value = frame.get(source.get("section", "equipment"), {}).get(source["asset"])
     for field in source["field"].split("."):
         value = value.get(field) if isinstance(value, dict) else None
+    if fault := source.get("fault"):
+        value = next((event["severity"] for event in value or []
+                      if (event["component"], event["fault"]) == (fault["component"], fault["fault"])), 0)
+    if "state_factors" in source:
+        return source["state_factors"].get(value, source["default"])
     return source.get("default") if value is None else value
 
 
@@ -77,6 +86,7 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
     enabled = settings.get("enabled", False)
     alarm_tags = [tag for tag in tags if tag.get("channel") == "alarm"]
     tags = [tag for tag in tags if tag.get("channel") != "alarm"]
+    quality_tags = {tag["tag_id"]: tag["quality_tag"] for tag in tags if "quality_tag" in tag}
     bag_tags = [tag for tag in tags if tag["source"].get("transform") == "bags_count"]
     bag_source = bag_tags[0]["source"] if bag_tags else None
     compartments = {entry["grade"]: entry for entry in
@@ -164,7 +174,13 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
             for tag in alarm_tags:
                 device, alarm_id = tag["device_id"], tag["tag_id"]
                 rule = tag["rule"]
-                value = readings[device].get(rule["input_tag"])
+                device_readings = readings[device]
+                input_tag = rule["input_tag"]
+                value = device_readings.get(input_tag)
+                if (quality := quality_tags.get(input_tag)) and device_readings.get(quality) == "BAD":
+                    value = None
+                if (permissive := rule.get("permissive")) and (read_source(frame, permissive) or 0) <= 0:
+                    value = None
                 alarms.setdefault(device, {})[alarm_id] = alarm_value(
                     value, rule, alarm_state.setdefault(alarm_id, {}), modes[tag["source"]["asset"]], time_s, step_s)
             if alarms:
