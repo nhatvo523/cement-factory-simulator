@@ -14,14 +14,14 @@ class KilnScadaTest(unittest.TestCase):
         handler = ExplorerHandler.__new__(ExplorerHandler)
         cases = ("baseline", "kiln_id_fan_derate", "kiln_id_fan_trip", "cooler_grate_jam",
                  "kiln_feeder_jam", "cooler_airflow_loss")
-        cls.results = {name: handler.simulation(name, thermal_coupling=False) for name in cases}
+        cls.results = {name: handler.simulation(name, thermal_coupling=False, conditioning_enabled=False) for name in cases}
 
     def frames(self, name):
         return self.results[name]["frames"]
 
     def test_phase_a_tags_have_assumed_metadata_and_replay_deterministically(self):
         baseline = self.results["baseline"]
-        tags = [tag for tag in baseline["tags"] if tag.get("assumed")]
+        tags = [tag for tag in baseline["tags"] if tag.get("assumed") and "normal" in tag]
         self.assertEqual(len(tags), 22)
         for tag in tags:
             self.assertTrue({"unit", "range", "normal", "alarm", "trip"} <= tag.keys())
@@ -29,7 +29,7 @@ class KilnScadaTest(unittest.TestCase):
                 self.assertGreater(tag["time_constant_s"], 0)
             for frame in baseline["frames"]:
                 self.assertIn(tag["tag_id"], frame["measurements"][tag["device_id"]])
-        replay = ExplorerHandler.__new__(ExplorerHandler).simulation("baseline", thermal_coupling=False)
+        replay = ExplorerHandler.__new__(ExplorerHandler).simulation("baseline", thermal_coupling=False, conditioning_enabled=False)
         self.assertEqual(replay["frames"], baseline["frames"])
 
     def test_cyclone_order_pressure_law_and_thermal_step_response(self):

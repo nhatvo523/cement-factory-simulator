@@ -32,10 +32,19 @@ class KilnRawMillCoupling:
         self.ramp_tph = None
         self.silo_free_lime_pct = config["kiln"]["nominal_free_lime_pct"]
         self.lab_queue = deque()
-        self.next_sample_s = config["lab"]["sample_interval_s"]
+        lab = config["lab"]
+        self.lab_schedule = lab["profiles"][lab["analysis_type"]]
+        self.next_sample_s = self.lab_schedule["sample_interval_s"]
 
-    def route_gas(self, ready):
+    def route_gas(self, ready, kiln_running):
         gas = self.config["gas_route"]
+        if not kiln_running:
+            self.mode = "NO_KILN_GAS"
+            self.bypass = 0
+            self.stable_s = self.stopped_s = 0
+            return 1.0, 1.0
+        if self.mode == "NO_KILN_GAS":
+            self.mode = "DRYING"
         warm = min(self.exhaust_c, self.config["drying"]["backup_air_c"]) >= gas["return_hot_c"]
         cold = self.exhaust_c <= gas["dropout_c"]
         self.stopped_s = 0 if self.was_running else self.stopped_s + self.step_s
@@ -160,7 +169,7 @@ class KilnRawMillCoupling:
         return self.lab_results(time_s, free_lime)
 
     def lab_results(self, time_s, free_lime):
-        cfg = self.config["lab"]
+        cfg = self.lab_schedule
         if time_s >= self.next_sample_s:
             self.next_sample_s += ((time_s - self.next_sample_s) // cfg["sample_interval_s"] + 1) * cfg["sample_interval_s"]
             if free_lime is not None:

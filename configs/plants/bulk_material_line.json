@@ -58,8 +58,11 @@
       "restart_ramp_tph_per_s": 0.25
     },
     "lab": {
-      "sample_interval_s": 600,
-      "report_delay_s": 300
+      "analysis_type": "automatic",
+      "profiles": {
+        "automatic": {"sample_interval_s": 600, "report_delay_s": 300},
+        "manual_hourly": {"sample_interval_s": 3600, "report_delay_s": 1800}
+      }
     },
     "baseline_tolerance": {
       "relative": 0.0,

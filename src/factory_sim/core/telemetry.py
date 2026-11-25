@@ -5,15 +5,21 @@ from math import expm1, prod
 from pathlib import Path
 
 from factory_sim.core.config import read_json
+from factory_sim.core.signal_conditioning import alarm_value, conditioned_value
 
 
-def load_tag_config(model_directory, assets, plant=None):
+def load_tag_config(model_directory, assets, plant=None, conditioning_enabled=None):
     path = Path(model_directory).parent / "operating_profiles/equipment_tags.json"
     if not path.is_file():
         return {"tags": [], "ground_truth_default": False}
     config = read_json(path)
+    if conditioning_enabled is not None:
+        config.setdefault("signal_conditioning", {})["enabled"] = conditioning_enabled
     tags = []
     for tag in config["tags"]:
+        if tag.get("channel") == "alarm" or tag.get("requires_conditioning"):
+            if not config.get("signal_conditioning", {}).get("enabled"):
+                continue
         if tag.get("requires") and not (plant or {}).get(tag["requires"], {}).get("enabled"):
             continue
         source = tag["source"]
@@ -25,6 +31,10 @@ def load_tag_config(model_directory, assets, plant=None):
             tags.append(tag)
     if len({tag["tag_id"] for tag in tags}) != len(tags):
         raise ValueError("Duplicate SCADA tag")
+    measurements = {(tag["device_id"], tag["tag_id"]) for tag in tags if not tag.get("channel")}
+    for tag in tags:
+        if tag.get("channel") == "alarm" and (tag["device_id"], tag["rule"]["input_tag"]) not in measurements:
+            raise ValueError(f"Alarm references missing SCADA measurement: {tag['tag_id']}")
     return {**config, "tags": tags}
 
 
@@ -56,12 +66,17 @@ def passive_target(frame, source, value):
     return target
 
 
-def public_frames(frames, tags, plant, assets, ground_truth=False):
+def public_frames(frames, tags, plant, assets, ground_truth=False, signal_conditioning=None):
     previous_time = 0
     bag_remainder = 0.0
     bag_count = 0
     bag_history = deque([(0, 0)])
     thermal_state = {}
+    instrument_state, alarm_state, run_since = {}, {}, {}
+    settings = signal_conditioning or {}
+    enabled = settings.get("enabled", False)
+    alarm_tags = [tag for tag in tags if tag.get("channel") == "alarm"]
+    tags = [tag for tag in tags if tag.get("channel") != "alarm"]
     bag_tags = [tag for tag in tags if tag["source"].get("transform") == "bags_count"]
     bag_source = bag_tags[0]["source"] if bag_tags else None
     compartments = {entry["grade"]: entry for entry in
@@ -107,6 +122,9 @@ def public_frames(frames, tags, plant, assets, ground_truth=False):
                     value *= 100
                 elif transform == "cell_level":
                     value = min(100.0, 100 * value / compartments[field]["capacity_t"])
+                if "contact" in source:
+                    contact = source["contact"]
+                    value = value >= contact["high"] if "high" in contact else value <= contact["low"]
             coupled = source.get("coupled")
             coupled_value = read_source(frame, coupled) if coupled else None
             if coupled_value is not None:
@@ -119,8 +137,38 @@ def public_frames(frames, tags, plant, assets, ground_truth=False):
                 weight = -expm1(-step_s / tag["time_constant_s"])
                 value = previous + weight * (value - previous)
                 thermal_state[tag_id] = value
+            if enabled and "conditioning" in tag:
+                value = conditioned_value(value, tag, instrument_state.setdefault(tag["tag_id"], {}),
+                                          time_s, step_s, settings["seed"], settings["noise_enabled"])
             readings.setdefault(tag["device_id"], {})[tag["tag_id"]] = value
         public = {"time_s": time_s, "measurements": readings}
+        if enabled:
+            modes = {}
+            for tag in alarm_tags:
+                asset = tag["source"]["asset"]
+                if asset in modes:
+                    continue
+                running = frame["equipment"][asset].get("operating_state") == "RUNNING"
+                previous = run_since.get(asset)
+                if not running:
+                    run_since[asset] = None
+                    modes[asset] = "STOPPED"
+                else:
+                    if asset not in run_since:
+                        run_since[asset] = time_s - settings["startup_hold_s"]
+                    elif previous is None:
+                        run_since[asset] = time_s - step_s
+                    modes[asset] = ("STARTING" if time_s - run_since[asset] < settings["startup_hold_s"]
+                                    else "RUNNING")
+            alarms = {}
+            for tag in alarm_tags:
+                device, alarm_id = tag["device_id"], tag["tag_id"]
+                rule = tag["rule"]
+                value = readings[device].get(rule["input_tag"])
+                alarms.setdefault(device, {})[alarm_id] = alarm_value(
+                    value, rule, alarm_state.setdefault(alarm_id, {}), modes[tag["source"]["asset"]], time_s, step_s)
+            if alarms:
+                public["alarms"] = alarms
         if lab:
             public["lab"] = lab
         if ground_truth:

@@ -112,7 +112,10 @@ def simulate(plant, assets, scenario, live_events=None):
     recovered_fraction = dict.fromkeys(raw_heat, 1.0)
     coupling_config = plant.get("thermal_coupling", {})
     coupling = KilnRawMillCoupling(coupling_config, step) if coupling_config.get("enabled") else None
-    if coupling and routes.get(routes.get(coupling.mill)) != coupling.meal_silo:
+    coupled_kiln_line = next((path[1:] for _, origin, path in paths
+                              if coupling and origin == coupling.meal_silo), [])
+    if coupling and (routes.get(routes.get(coupling.mill)) != coupling.meal_silo
+                     or coupling.kiln not in coupled_kiln_line):
         raise ValueError("Thermal coupling requires a mill, separator and adjacent meal silo")
     params = nominal
     profile = scenario.get("profile", {})
@@ -164,8 +167,17 @@ def simulate(plant, assets, scenario, live_events=None):
             mill = coupling.mill
             ready = (params[mill]["capacity_tph"] > 0 and params[routes[mill]]["capacity_tph"] > 0
                      and Fan.airflow(params[fans[mill]]) > 0)
-            flow_factor, pressure_factor = coupling.route_gas(ready)
             fan = coupling.draft_fan
+            ph = coupling.preheater
+            fan_airflow = Fan.airflow(params[fan])
+            draft = fan_airflow / params[ph]["reference_exhaust_m3_s"]
+            kiln_running = (stocks[coupling.meal_silo].total > 1e-9
+                            and bulk_components[coupling.meal_silo].outlet_limit(start) > 0
+                            and Storage.acceptance(params[coupling.clinker_silo], stocks[coupling.clinker_silo]) > 1e-9
+                            and draft >= params[ph]["minimum_draft_fraction"]
+                            and preheaters[ph].severity("cyclone", "blockage") < 1
+                            and all(params[key]["capacity_tph"] > 0 for key in coupled_kiln_line[:-1]))
+            flow_factor, pressure_factor = coupling.route_gas(ready, kiln_running)
             params[fan] = {**params[fan], "airflow_m3_s": Fan.airflow(params[fan]) * flow_factor}
             params[mill] = coupling.prepare_drying(Fan.airflow(params[fan]), params[mill], ready)
         for key, runtime in preheaters.items():

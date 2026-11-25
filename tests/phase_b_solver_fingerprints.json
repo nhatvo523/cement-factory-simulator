@@ -1,0 +1,262 @@
+{
+  "baseline": {
+    "material": "1f92c398e6e6e95814200b9fcc916ca16344294f25ca66807ffb4b5994e255b3",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "crusher_stop": {
+    "material": "68db6e5a59efe9c3b2e0d23b8bbcf202ce87024e6cd2770584b65f413bd94304",
+    "thermal_quality": "63e360451f4d8569ca795fb44962b6335f5bf6eccc1d25ab98e2a1cb21b31cd6"
+  },
+  "fan_derate": {
+    "material": "5013841f49321afd3bb18b18da60b2b7039cb559a8dbc11a436ac6f0c20a1e68",
+    "thermal_quality": "6573204ea87173ef98020c69e0c2af384ee0765f76c5c6c00cf0b91cded3fd58"
+  },
+  "downstream_feed_stop": {
+    "material": "1fb82b64bcf17f3ecb4d51ea15a8e4b77e666d50ff0983a94379e368984c5dce",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "crusher_rotor_jam": {
+    "material": "cab78bd520c5d89260f26797b46fe9f5522177741c874fb061f35493453ea846",
+    "thermal_quality": "98fab4900586f53de2f949a14e39ab24c3c91ea5a0ddf630f2c2c544e3bd3fe0"
+  },
+  "crusher_tool_wear": {
+    "material": "9ccbdd7e0c23f9253644f59e903fef4c3fba35c0ac847be47356f76bdd8525c4",
+    "thermal_quality": "eadf9b7ad2e126388babd0b53903f54182c11c02ed617097d99f0a03b5715ee3"
+  },
+  "crusher_motor_cooling_loss": {
+    "material": "ee691bb598f9bec3e37e9f8d20e6e10db56075e6d6b77c00f41b27d73dfb6c15",
+    "thermal_quality": "eba4d50d07414dc7e0106ba303a46693eacb2756401376562bb0c04b74743f7e"
+  },
+  "crusher_bearing_friction": {
+    "material": "62897a0a417e13e52a6940a51eb839f83bcb9a1d4c897a7ca6e151911ae2ac1b",
+    "thermal_quality": "7ba75593334ccd540804e5c5c41615ff4b06e0a8d55a05870059f34e1bc151c4"
+  },
+  "crusher_oil_pressure_loss": {
+    "material": "d0ec4f0a0993b57a7e5a38a0ea72bd3ed911ad6e9f6f0d12e5b825700e8fda64",
+    "thermal_quality": "1bd1fbc102a9483ef100a75d233b2c8aeb282d22c49f148f8f287cf3b40daf3e"
+  },
+  "crusher_vibration_signal_loss": {
+    "material": "8daa59429ef8d71ebe54dd60c764c4c5bcf0ac474fa134d043649cc0381beb2b",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "conveyor_belt_slip": {
+    "material": "22a75da0b606450601ab1f02eb977fa7cbbbb8863497d3f55469b4ca6129a611",
+    "thermal_quality": "fa153cbb3ee6e395cac61dbee4e996adfc36aaef99e108c7e144fb3beedb49ee"
+  },
+  "conveyor_belt_misalignment": {
+    "material": "357943bcea7410ed0ffa00766e0c17f02d1f814928d8b46acdaf77e19a06dc1e",
+    "thermal_quality": "fcdbf0b40d00c781a3117d9d81dafa901e9ca02a8cb537fee662279429774b1a"
+  },
+  "conveyor_chute_blockage": {
+    "material": "e9f9086a20ffba7b844343bca56e700ed2c63f1acdf03c9cb82b0557f5e60b46",
+    "thermal_quality": "e19c33aa924fb2995d76b60b097b9c18a2a3fa3da2a5363bdc69303414e13fa1"
+  },
+  "conveyor_scale_signal_loss": {
+    "material": "3cd313b063a7fcc0f1b847438124f1763c13175cd80b4b75a679141d2a4a0005",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "stockpile_level_false_high": {
+    "material": "d502af79eebee101c366f629aaac45f050ddb8bcc0b88db91edc6c467bb7b0bd",
+    "thermal_quality": "e19c33aa924fb2995d76b60b097b9c18a2a3fa3da2a5363bdc69303414e13fa1"
+  },
+  "stockpile_stacker_failure": {
+    "material": "3de6b74950fd1ebde7c0f46693488bb01d57829dba569fbe40270756f0829660",
+    "thermal_quality": "e19c33aa924fb2995d76b60b097b9c18a2a3fa3da2a5363bdc69303414e13fa1"
+  },
+  "reclaimer_mechanism_jam": {
+    "material": "6b334ab8a97ea1829014393fb3eeddd30c5bedea179ffa56c078999ea0df8b2d",
+    "thermal_quality": "54a270291471e417bc51d045e610a79efbd8ab5b3a095d47001d27a343631c41"
+  },
+  "reclaimer_bridge_stall": {
+    "material": "e51486846a30ea2405360f1fe8378e73bc98c5bbcbd946ce87829d4ae84866c4",
+    "thermal_quality": "e23e8890a0fbfd2ddf2af705c5161b4dbe838a14e7b0104b9a2444447f86e35c"
+  },
+  "reclaimer_harrow_encoder_loss": {
+    "material": "1116f2c388e905a5ac8e29e6c4aee47351bbd5c9e6eb447a05b47becd80f350f",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "feed_bin_outlet_bridging": {
+    "material": "9c2c524143c7bdc53e3827b33adaccff2db655f79fa95990470b0465d839aba9",
+    "thermal_quality": "5e7600d12a62c14b1d9b134d9904afc4b6288fc805922649d7a54c182124fe8f"
+  },
+  "feed_bin_level_signal_loss": {
+    "material": "1706ecc47709891453e0c9cdd2a1eb64f186729cd063da63473ccae53e9c0d56",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "feeder_drive_jam": {
+    "material": "d42d73b0dbf7ef6884562298e611355478507b3114444de86fa52b5a818fbad7",
+    "thermal_quality": "5e7600d12a62c14b1d9b134d9904afc4b6288fc805922649d7a54c182124fe8f"
+  },
+  "feeder_scale_bias": {
+    "material": "ca6d817f7d355f099071421d28583cfec37a2e992c608503f7bc9ca61134e570",
+    "thermal_quality": "77354515462528f4a3de5b6b8ff0860db8d85388b566a873ecec3c463837557f"
+  },
+  "feeder_scale_loss": {
+    "material": "fef4a192b090d663e4d66bbeeb2b3444015ea6e2eb3afa9edd9f3fa20dd0c727",
+    "thermal_quality": "5e7600d12a62c14b1d9b134d9904afc4b6288fc805922649d7a54c182124fe8f"
+  },
+  "mill_roller_wear": {
+    "material": "3b78cc0ee1a87c05d0ccb8065be7ba047572512d7a550dfd0160f4345847ebef",
+    "thermal_quality": "7e884820f99dc24ac98200f94f8e6bce2baec6f7deee9be1fa6b26569ddbc232"
+  },
+  "mill_roller_imbalance": {
+    "material": "0339d1c0c9bf4b5a87cad69c061d5d80378e07135437a504f89551a09558fd5a",
+    "thermal_quality": "c980cc4e1df8443458d5f15d399e42a0c4125bdfcb9b5d0ac62577b10ebc7c19"
+  },
+  "mill_hydraulic_loss": {
+    "material": "489dbb933f38d23b28f38d0011649e40a45fcc68e370cf8ee8cd49b4c3c093ab",
+    "thermal_quality": "a0c02e3bc4b92919fa0c2180f4e883428aada0b1f9f19203ddc84e42af446c79"
+  },
+  "mill_vibration_signal_loss": {
+    "material": "e4a4c8e4d4907c63f409a1b0b44a2d097a06afc66645325feb6faa31dc0c4128",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "separator_underspeed": {
+    "material": "b9fe8f65449b5df317682cfdf5de12481b4053c0ae3bcae0ca6952e7389dd5c4",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "separator_drive_trip": {
+    "material": "0e9818a4cea16ba0e356d0b710327894b9a6167f1af812726e52cb9c7a371441",
+    "thermal_quality": "a0c02e3bc4b92919fa0c2180f4e883428aada0b1f9f19203ddc84e42af446c79"
+  },
+  "fan_impeller_degradation": {
+    "material": "d9a89e5f377a91230926e1dc06376688cc37e8a0f661a9bfd8ec5cd5fb2454fa",
+    "thermal_quality": "629f0f29e8b99464279a57fb146869bf99d83e7b8238231e9948e7c9c29037d1"
+  },
+  "fan_damper_stuck": {
+    "material": "2eaf4a1633577dae32f63e5137a6896a9721801c2aa8ba86e3e64e4cb5ed99a8",
+    "thermal_quality": "dde2bfc02daa336d4446b4c1fb59b8d70fd6d2920058ae6e741c6668858f1dac"
+  },
+  "fan_bearing_overheat": {
+    "material": "b8b25501cd51cff2e4e7bedaa79e93191eb3560d43a039292fbd13597d1eadb4",
+    "thermal_quality": "f5495c6a982be938bfe0939f16ad50dc96adeebf1a7fdbd40159d2295fdd4fbe"
+  },
+  "raw_silo_outlet_blockage": {
+    "material": "8a19850eb84d0187f1255520c31e2b85d879e2288642b55379a302d84ee2cdb7",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "raw_silo_level_signal_loss": {
+    "material": "326507a3e1e32453d985d2a15dcadd5e4c08487b678b8a396e871057a2e74ed2",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "kiln_feeder_jam": {
+    "material": "895ff94aafd3575ecfa49211b7aaf37a4c9c517103c7c5bfa6222937c1d60281",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "preheater_cyclone_blockage": {
+    "material": "d43d6e0f7b52d156b52072397f1eed30e436972d3b2665e287a7d0b66a5a344f",
+    "thermal_quality": "3929cd401aba58fc2aaf4f66d99016aa2c659df681e203aef8f514761a843261"
+  },
+  "calciner_fuel_loss": {
+    "material": "b9ebdd52c92b3b299d880e89a83bd0acfa69c3b2c4ef928ec51d0f29be14ed98",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "kiln_drive_trip": {
+    "material": "d4441a19c079b091af0f1e66a692b8137b44f5f6e6ee2322ce50b45e0f7ca1b9",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "kiln_burner_fuel_loss": {
+    "material": "61121168093287dc06af90173312e23ad4d202e4cf61a1388521d458ca840890",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "cooler_airflow_loss": {
+    "material": "e995522f1398192895528f9582bf328bf5ef4f19f7810456252524c489ae6f41",
+    "thermal_quality": "92b2a9520f2bbeb1a9b9c96f746777ee36953903afd461e12e0d5f653ad1af6d"
+  },
+  "cooler_grate_jam": {
+    "material": "a3d5e772a851d25db8e37ed735791a816ec7dd90e2f77531b1c091c6b054f689",
+    "thermal_quality": "81b10360abcc724ccf81826fa53e0d6e19f5c0cbeb4462947c3793abc587333c"
+  },
+  "kiln_id_fan_trip": {
+    "material": "7caf1256de6a988c55014cedfe4ed0f3e1deec28b3accfffb3361a35c73851aa",
+    "thermal_quality": "df2f218c5808015f50bd710293d7e49e3aaef4dc35911c0b76c247b5d885b4c4"
+  },
+  "kiln_id_fan_derate": {
+    "material": "db8adca8121037549939ac681126d044876af4002221ac98c6a03e43cb15d555",
+    "thermal_quality": "040226d92924ab77e8206a6907a44d569b65ea00ade54577ebd6a8700e2be585"
+  },
+  "clinker_silo_outlet_blockage": {
+    "material": "c64c4f92de4c7fe042e4f4bc62b5841f3a5343a0a4b3b5aa0f3e982a591a0266",
+    "thermal_quality": "f2879f4edda4d4cb20e35707e1508a44b40bdc25e3e781a89dbd36681366c989"
+  },
+  "clinker_silo_level_signal_loss": {
+    "material": "a5d6d5d287e4b37360d80654edad083e9e2c51cbd39aca5c708df33575d7d57d",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_mill_a_trip": {
+    "material": "b7c028940afc255f77438e002173c97ba5152bf4dbeed715a135e927a4ffaed9",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_mill_b_trip": {
+    "material": "8ad9b015a563fe4b3d562a39338da58854ebe7d70298e188ca4fafe17bdefc4f",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "bag_packer_jam": {
+    "material": "8fb1fe5d92d7266e4516f478051d6d95d69bce916eb072b4eda8e95d07e7d58c",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "bulk_loading_stop": {
+    "material": "b467e3145caff5684739226bf376f53e2615e98b9f41bb52931f988cbc7f850a",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_feeder_a_jam": {
+    "material": "a2d91c5c733b399e087a6c664f38af196f257bc5a8256ff2adebf8f404c4a2dc",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_feeder_b_jam": {
+    "material": "1cba265eed43ebe0fc18f814f0eb8c6fe011fcdbf24ebeaa55dcd6448c9b05b2",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_mill_a_wear": {
+    "material": "55c0e8418ec0e3ccb7029cbd7159570e560b7fbb5b54b3d91ed3370c1f7e147e",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_mill_b_wear": {
+    "material": "63320ddce8e0cb8e9416bb8820cab39d0edb2ccccb2ac7b32ab47245d5103c63",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_separator_a_trip": {
+    "material": "2f3b4e5356b2c5f5d9a26ba6521bf1c9d8e791a21814a8d30a541d39454d682b",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_separator_b_trip": {
+    "material": "990e116367b572b8298089b64e9cbdf0e030f8cb37f1a6faaee2aa46fe59119a",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_fan_a_trip": {
+    "material": "6bff1527b762d599064ecf4c885370816089309c8de312e22590a7233d398f4f",
+    "thermal_quality": "2894cdf6c8553a6f2786952b8fd718288596431579782d7eefeae628c8096803"
+  },
+  "cement_fan_b_trip": {
+    "material": "c6e5e309cafee2b33a8dd8b306201bf78af9f572fafbc55e0e49dbaed1e94ed7",
+    "thermal_quality": "583feff34ca2b11bc8bd09d5a33dcb2cfe3c588e68f8c4c4246ffcd4b9ed7600"
+  },
+  "cement_silo_gate_blockage": {
+    "material": "e19c4c6f3d7363bebe3dfab3828fcb24069196e950d27a3a501905c07eb8f55a",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_silo_level_loss": {
+    "material": "956b2d68d7d2dad73fb69d0016a4c5a3828b66b4da5b899c8b31a65bc20c3894",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "bag_feeder_jam": {
+    "material": "5a660ab1bf1bce012a9b877dc1502c48b91aa1ad80af06a031675f2f59be72b5",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "bag_conveyor_trip": {
+    "material": "7fff6878b66999c9f297b0ba01dfa89155d1b82f9933e473282b288052341f1b",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "bag_loader_stop": {
+    "material": "16cf2cbded71cb501fc100b915eaf4ad862c789df5dce38d315da2bb24472e88",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "bulk_feeder_jam": {
+    "material": "1a402189560d9e2ef7bebb8dbd225151bec40aee6b29654af36c35755a8008e6",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "truck_scale_signal_loss": {
+    "material": "2974ba82e0f86e3d13cc156be926702f036557aae89fd54a6cc2a44a821fa0a7",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  }
+}

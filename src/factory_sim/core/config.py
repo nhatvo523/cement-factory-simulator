@@ -104,10 +104,16 @@ def load_plant(model_directory, path):
             (drying, ("exhaust_time_s", "heat_hold_time_s", "water_evaporation_kwh_per_t")),
             (kiln, ("burning_time_s", "reference_feed_tph", "reference_fuel_per_feed",
                     "reference_recovered_kw", "reference_residence_s", "minimum_residence_load")),
-            (coupling["lab"], ("sample_interval_s", "report_delay_s")),
         ):
             for key in keys:
                 check_parameter(f"thermal_coupling.{key}", group[key], {"min": 1e-9})
+        lab = coupling["lab"]
+        if lab["analysis_type"] not in lab["profiles"]:
+            raise ValueError("Unknown free-lime analysis type")
+        for profile in lab["profiles"].values():
+            for key in ("sample_interval_s", "report_delay_s"):
+                if type(profile[key]) is not int or profile[key] <= 0:
+                    raise ValueError(f"Invalid free-lime lab setting: {key}")
         if not (gas["dropout_c"] < gas["return_hot_c"] <= drying["backup_air_c"]
                 and coupling["ambient_c"] < min(drying["nominal_exhaust_c"], kiln["nominal_burning_c"])):
             raise ValueError("Invalid thermal coupling temperature hysteresis")

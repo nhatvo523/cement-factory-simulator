@@ -109,7 +109,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_live_operation_uses_elapsed_seconds_and_continues_past_ninety_minutes(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
-            operation = LiveOperation(thermal_coupling=False)
+            operation = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
             self.assertEqual(read_solver(operation, [])["time_s"], 1)
             clock.return_value += 1
             self.assertEqual(read_solver(operation, ["crusher_rotor_jam"])["time_s"], 2)
@@ -125,8 +125,8 @@ class SimulationTest(unittest.TestCase):
 
     def test_line_one_sensor_faults_preserve_inventory_and_distinguish_interlock(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
-            normal = LiveOperation(thermal_coupling=False)
-            faulty = LiveOperation(thermal_coupling=False)
+            normal = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
+            faulty = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
             faulty.read(["conveyor_scale_signal_loss", "feed_bin_level_signal_loss"])
             clock.return_value = 101
             reference = read_solver(normal, [])
@@ -146,7 +146,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_live_scada_uses_sampled_component_and_equipment_signals(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
-            operation = LiveOperation(thermal_coupling=False)
+            operation = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
             physical = operation.frame["equipment"]
             readings = operation.read([])["frame"]["measurements"]
             self.assertNotEqual(readings["CR-101"]["CR-101.rotor.speed_rpm"],
@@ -163,7 +163,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_line_one_combined_faults_limit_the_right_material_paths(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
-            operation = LiveOperation(thermal_coupling=False)
+            operation = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
             operation.read(["conveyor_belt_slip", "conveyor_belt_misalignment",
                             "reclaimer_mechanism_jam", "feed_bin_outlet_bridging"])
             clock.return_value = 101
@@ -184,7 +184,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_reclaimer_travel_encoder_and_discharge_interlock(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
-            operation = LiveOperation(thermal_coupling=False)
+            operation = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
             normal = operation.frame["measurements"]["reclaimer"]
             self.assertGreater(normal["components"]["bridge_travel"]["position_m"], 0)
             self.assertGreater(normal["components"]["scraper_chain"]["speed_m_s"], 0)
@@ -204,7 +204,7 @@ class SimulationTest(unittest.TestCase):
 
     def test_reclaimer_bridge_stall_stops_travel_and_trips_after_delay(self):
         with patch("factory_sim.server.monotonic", return_value=100) as clock:
-            operation = LiveOperation(thermal_coupling=False)
+            operation = LiveOperation(thermal_coupling=False, conditioning_enabled=False)
             operation.read(["reclaimer_bridge_stall"])
             clock.return_value = 101
             frame = read_solver(operation, [])

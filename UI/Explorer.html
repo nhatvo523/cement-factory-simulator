@@ -1042,7 +1042,7 @@ function showSimulationFrame() {
     return;
   }
   const tags=simulation.tags.filter(tag=>tag.device_id===simulation.asset && tag.visible);
-  const rows=tags.filter(tag=>tag.channel!=='lab')
+  const rows=tags.filter(tag=>!tag.channel)
     .map(tag=>{
       const raw=readings[tag.tag_id];
       const value=typeof raw==='number'?simulationNumber.format(raw):
@@ -1054,7 +1054,9 @@ function showSimulationFrame() {
     return [tag.label,sample?simulationNumber.format(sample.value)+' '+tag.unit:'Chờ kết quả',
       sample?sample.sampled_at_s+' s':'—',sample?sample.reported_at_s+' s':'—'];
   });
-  target.innerHTML=table(['Thông số','Giá trị đo'],rows)+
+  const activeAlarms=tags.filter(tag=>tag.channel==='alarm' && frame.alarms?.[simulation.asset]?.[tag.tag_id])
+    .map(tag=>note(tag.label));
+  target.innerHTML=activeAlarms.join('')+table(['Thông số','Giá trị đo'],rows)+
     (labRows.length?table(['Kết quả lab','Giá trị','Lấy mẫu','Trả kết quả'],labRows):'');
 }
 

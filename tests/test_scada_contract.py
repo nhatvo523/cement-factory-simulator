@@ -21,18 +21,22 @@ class ScadaContractTest(unittest.TestCase):
         cls.tags = read_json(CONFIGS / "operating_profiles/equipment_tags.json")["tags"]
         cls.allowed = {}
         for tag in cls.tags:
-            if tag.get("channel") == "lab":
+            if tag.get("channel"):
                 continue
             cls.allowed.setdefault(tag["device_id"], set()).add(tag["tag_id"])
 
     def assert_public_frame(self, frame):
-        self.assertEqual(set(frame) - {"lab"}, {"time_s", "measurements"})
+        self.assertEqual(set(frame) - {"lab", "alarms"}, {"time_s", "measurements"})
         lab_tags = {(tag["device_id"], tag["tag_id"]) for tag in self.tags if tag.get("channel") == "lab"}
         for device, readings in frame.get("lab", {}).items():
             for tag, samples in readings.items():
                 self.assertIn((device, tag), lab_tags)
                 for sample in samples:
                     self.assertEqual(set(sample), {"sampled_at_s", "reported_at_s", "value"})
+        allowed_alarms = {(tag["device_id"], tag["tag_id"]) for tag in self.tags if tag.get("channel") == "alarm"}
+        actual_alarms = {(device, tag) for device, values in frame.get("alarms", {}).items()
+                         for tag, value in values.items() if type(value) is bool}
+        self.assertEqual(actual_alarms, allowed_alarms)
         actual = {device: set(values) for device, values in frame["measurements"].items()}
         self.assertEqual(actual, self.allowed)
         for readings in frame["measurements"].values():

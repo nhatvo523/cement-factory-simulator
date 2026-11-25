@@ -115,17 +115,17 @@ class ThermalCouplingTest(unittest.TestCase):
         coupling.mode, coupling.bypass = "BYPASS", 1
         coupling.exhaust_c = (gas["return_hot_c"] + gas["dropout_c"]) / 2
         for _ in range(12):
-            coupling.route_gas(True)
+            coupling.route_gas(True, True)
         self.assertEqual(coupling.mode, "BYPASS")
         coupling.exhaust_c = gas["return_hot_c"] + 1
         for _ in range(gas["stable_run_s"] // coupling.step_s):
-            coupling.route_gas(True)
+            coupling.route_gas(True, True)
         self.assertEqual(coupling.mode, "TO_DRYING")
         coupling.exhaust_c = gas["return_hot_c"] - 1
-        coupling.route_gas(True)
+        coupling.route_gas(True, True)
         self.assertEqual(coupling.mode, "TO_DRYING")
         coupling.exhaust_c = gas["dropout_c"] - 1
-        coupling.route_gas(True)
+        coupling.route_gas(True, True)
         self.assertEqual(coupling.mode, "TO_BYPASS")
 
     def test_underfiring_raises_free_lime_and_only_reports_delayed_samples(self):
@@ -146,7 +146,7 @@ class ThermalCouplingTest(unittest.TestCase):
         self.assertEqual(reports[0]["sampled_at_s"], 600)
         self.assertEqual(reports[1]["sampled_at_s"], 1200)
         self.assertGreater(reports[1]["value"], reports[0]["value"])
-        self.assertTrue(all(row["reported_at_s"] - row["sampled_at_s"] == self.config["lab"]["report_delay_s"]
+        self.assertTrue(all(row["reported_at_s"] - row["sampled_at_s"] == self.config["lab"]["profiles"]["automatic"]["report_delay_s"]
                             for row in reports))
         self.assertNotIn("RM-201.recovered_drying_heat_kw", stream[0]["measurements"]["RM-201"])
         self.assertAlmostEqual(stream[0]["measurements"]["PH-301"]["PH-301.cyclone_4.gas_temperature_c"],

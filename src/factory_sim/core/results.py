@@ -36,12 +36,13 @@ def solve_result(model_directory, plant_path, scenario_path, fault_schedule=(), 
 
 
 def build_result(model_directory, plant_path, scenario_path, fault_schedule=(), ground_truth=None,
-                 thermal_coupling=None):
+                 thermal_coupling=None, conditioning_enabled=None):
     result, plant, assets = solve_result(model_directory, plant_path, scenario_path, fault_schedule, thermal_coupling)
-    config = load_tag_config(model_directory, assets, plant)
+    config = load_tag_config(model_directory, assets, plant, conditioning_enabled)
     if ground_truth is None:
         ground_truth = config.get("ground_truth_default", False)
     result.update(schema_version=2, value_kind="scada", tags=config["tags"],
                   units={"time_s": "s"})
-    result["frames"] = list(public_frames(result["frames"], config["tags"], plant, assets, ground_truth))
+    result["frames"] = list(public_frames(result["frames"], config["tags"], plant, assets, ground_truth,
+                                         config.get("signal_conditioning")))
     return result
