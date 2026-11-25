@@ -1492,7 +1492,21 @@ Z02 có 47 tag công bố. Các điểm mô phỏng bao gồm nhiệt khí/áp s
 
 Áp suất cyclone tính theo bình phương lưu lượng khí. Độ lớn độ hút tăng từ tầng dưới lên tầng trên. Nhiệt khí mục tiêu giảm dần theo chiều này. Dòng truyền động lò tăng theo tải liệu, áp dưới ghi phụ thuộc lưu lượng gió và tải lớp clinker, còn nhiệt clinker đầu ra phản ánh tải liệu và năng lực làm nguội. Tín hiệu nhiệt dùng bộ lọc bậc một theo thời gian bước, với `time_constant_s` khai báo theo tag và giá trị khởi tạo bằng mục tiêu ở frame đầu tiên. Các hệ số, số tầng, dải đo, giá trị bình thường và ngưỡng là giả định. Metadata ngưỡng không điều khiển liên động.
 
-Các phép suy ra chạy sau solver và chỉ tác động dữ liệu công bố. Việc dùng nhiệt để tác động chất lượng clinker, khả năng sấy RM-201 hoặc chuyển hướng khí thải thuộc Pha B sau khi duyệt. Chi tiết từng tag và giả định có trong [Sensor-Audit.md](Sensor-Audit.md).
+Các phép suy ra Pha A chỉ tác động dữ liệu công bố. Chi tiết từng tag và giả định có trong [Sensor-Audit.md](Sensor-Audit.md).
+
+### Z02 và RM-201 — Pha B, ghép nhiệt
+
+Cấu hình plant bật `thermal_coupling.enabled` mặc định. Tắt cờ dùng lại solver Pha A. Khi bật, vùng nung tiến về nhiệt độ mục tiêu theo hệ bậc một (240 s), với hiệu chỉnh theo suất nhiên liệu, nhiệt thu hồi cooler chia gió thứ cấp/gió ba và tải liệu. Nhiệt thực ở đầu bước tham gia phép tính nhiệt thu hồi ở bước đó. Nhiệt khí tầng cao nhất PH-301 tiến về giá trị từ nhiệt vùng nung với hằng số 180 s.
+
+Free lime là thuộc tính clinker qua KL-301, CL-301 và SL-302, suy từ nhiệt độ và thời gian lưu xấp xỉ theo tải. SL-302 xuất theo nồng độ đầu bước của kho khuấy lý tưởng rồi pha trộn clinker mới theo khối lượng khô còn lại, tạo độ làm trơn phụ thuộc tồn kho. Mẫu tại CL-301 lấy mỗi 600 s khi có clinker mới và phát sau 300 s qua `lab`, với thời điểm lấy và trả. Giá trị free lime không chặn lò, không đổi tải hay mác Z03. Tác động chất lượng tới Z03 cần cơ chế riêng để duyệt.
+
+Ở RM-201, nhiệt có thể thu hồi là lưu lượng khí CF-301 nhân với chênh nhiệt khí tầng trên PH-301 so với môi trường và hệ số nhiệt hiệu dụng, nhân phần damper cấp vào mill. Nhiệt hữu dụng trong đường khí/mill có quán tính 120 s. Cộng nguồn dự phòng 65% năng lực nhiệt danh định, rồi chia cho nhiệt bốc hơi 720 kWh/t nước và nhu cầu nước cần bốc hơi mỗi tấn liệu để giới hạn cấp. Khi thiếu nhiệt sâu, giới hạn do nhiệt được nâng lên tải tối thiểu ổn định 48 t/h. Liệu cấp thực vẫn chịu giới hạn bởi nguồn liệu, gió và năng lực tuyến. Lượng nước bốc hơi vẫn bị giới hạn bởi nhiệt. Bột liệu ẩm được đánh dấu ở đầu ra nghiền/phân ly và chất lượng tồn SL-301 được tính từ hỗn hợp khối lượng nước/khô thực tế.
+
+Damper có bốn trạng thái nội bộ `DRYING`, `TO_BYPASS`, `BYPASS`, `TO_DRYING`. Khi mất điều kiện chạy hoặc xác nhận dừng, hành trình chuyển khí đi thẳng mất 120 s. Ở bypass, pilot sử dụng nhiệt dự phòng. Để trở lại, mill phải chạy ổn định 120 s, khí pilot và nguồn PH-301 đạt 195 °C. Trong lúc trở lại, nhiệt dưới 170 °C làm hủy hành trình. Lượng cấp tăng tối đa 0,25 t/h mỗi giây trong giai đoạn quay về tuyến sấy. Trở lực trên tuyến bypass làm thay đổi lưu lượng CF-301 và áp suất gauge. Cơ chế reset lỗi thủy lực RM-201 dùng sự kiện `clear: true` với giá trị 0 trong kịch bản.
+
+Baseline dùng dung sai tuyệt đối cấu hình là 1e-8 t, 1e-8 t/h, 1e-8 m³/s và 1e-10 cho phần khối lượng ẩm. Các hệ số được hiệu chỉnh để giữ lưu lượng danh định trong simulator, chưa lấy từ dữ liệu nhà máy. [Kiểm kê tag](Sensor-Audit.md) · [Đối chiếu 65 kịch bản](Thermal-Coupling-Report.md)
+
+Tài liệu đối chiếu mô tả cấu hình bypass của raw mill và quan hệ giữa nhiệt độ, thời gian nung và free CaO. Các đường cong, thời gian và ngưỡng số trong simulator là cấu hình giả định. [Sơ đồ khí thải và raw mill bypass](https://gaftp.epa.gov/Air/Portland%20Cement/Heidelberg%20Materials%20Union%20Bridge%20Plant%20-%20NESHAP%20RTR%20Stack%20Test%20Report.pdf) · [Nghiên cứu ảnh hưởng tốc độ gia nhiệt đến clinker](https://www.sciencedirect.com/science/article/abs/pii/S0008884698001963)
 
 ## 4. Trạng thái triển khai
 

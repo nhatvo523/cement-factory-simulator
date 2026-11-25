@@ -38,6 +38,21 @@ Tín hiệu nhiệt khởi tạo theo giá trị mục tiêu của frame đầu 
 
 Điểm cần duyệt trước Pha B gồm số tầng/vị trí lắp đầu đo, hệ số và hằng số thời gian theo dữ liệu vận hành, phương pháp gắn nhiệt với chất lượng clinker và mức giảm khả năng sấy, cùng điều kiện chuyển tuyến khí thải trực tiếp khi RM-201 dừng. Cần chốt cả trường hợp khởi động lại và điều kiện quay về tuyến sấy.
 
+## Bước 2 — Z02 và RM-201, Pha B
+
+Trước khi ghép nhiệt đã xác nhận đủ năm tag từ Pha A: `PC-301.calciner_outlet.temperature_c`, `CL-301.grate_drive.speed_m_s`, `CL-301.cooler_outlet.temperature_c`, `KF-301.feeder_drive.current_a` và `PH-301.cyclone_4.gas_temperature_c`.
+
+| Tag / kênh | Thay đổi khi bật ghép nhiệt |
+|---|---|
+| `RM-201.gas_inlet_temperature_c`, `RM-201.gas_outlet_temperature_c` | Hai điểm đo °C mô phỏng theo nhiệt dự phòng, phần nhiệt khí thu hồi và lượng nước bốc hơi. Khi mill không chạy, trả `null`. Công suất nhiệt khả dụng giữ nội bộ. |
+| `CL-301.lab.free_lime_pct` | Kênh lab riêng. Chỉ phát tại thời điểm trả kết quả, kèm thời gian lấy mẫu. Không lấy mẫu nếu không có clinker mới tại đầu ra cooler. |
+| Nhiệt khí các tầng PH-301 | Dùng trạng thái nhiệt khí thải tầng trên cùng làm cơ sở, với hệ số theo tầng. Tầng trên cùng chính là nguồn nhiệt của mô hình sấy. |
+| Áp suất gauge PH-301 / CF-301 | Trở lực thay đổi theo vị trí damper ở giữa hai chế độ. Dấu âm giữ nguyên khi hút. |
+
+Mặc định `thermal_coupling.enabled: true` trong plant. Khi tắt cờ, hai tag nhiệt RM-201 và kênh lab không xuất hiện. Các tag PH-301 trở lại phép suy ra thụ động của Pha A. Có 163 tag liên tục và 1 tag lab khi bật cờ, gồm 54 tag liên tục Z01 và 47 tag liên tục Z02. Z03 và Z04 giữ nguyên danh mục.
+
+Các giả định chính gồm hệ số nhiệt theo suất nhiên liệu, phân bổ nhiệt cooler 72% gió thứ cấp và 28% gió ba, thời gian lưu tham chiếu 1.800 s và đường cong free lime theo nhiệt/thời gian lưu. Ngưỡng, dải và tham số vẫn là giả định mô phỏng. Điều kiện duyệt Bước 3 gồm hiệu chuẩn từ dữ liệu ca vận hành, tách quán tính của quá trình khỏi quán tính đầu đo, chọn nhiễu theo seed, dải bão hòa, debounce và ngưỡng cảnh báo theo chế độ. [Đối chiếu 65 kịch bản](Thermal-Coupling-Report.md)
+
 ## Bề mặt dữ liệu trước Bước 1
 
 | Bề mặt | Dữ liệu hiện có |
