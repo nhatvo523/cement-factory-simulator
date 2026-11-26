@@ -1,6 +1,6 @@
 # Đối chiếu vân tay — Pha B ghép nhiệt
 
-So sánh 65 kịch bản đăng ký trên cấu hình plant mặc định. Vân tay bao gồm `time_s`, `equipment`, `balance` và `events`, nên cả 65 vân tay bật cờ đổi vì có thêm trường nội bộ. Khi tắt cờ, 65/65 vân tay khớp fixture đã ghi ở Pha A.
+Báo cáo lịch sử so sánh 65 kịch bản ở Pha B, khi ST-101 mặc định 35 t. Phép đối chiếu khi đó dùng `time_s`, `equipment`, `balance` và `events`. Khi bật ghép nhiệt, cả 65 vân tay đổi do có thêm trường nội bộ. Khi tắt cờ, 65/65 vân tay khớp fixture Pha A. Bộ hồi quy hiện hành tách vân tay vật liệu và nhiệt/chất lượng cho 68 ca, với tồn đầu ghim 35 t. Mô phỏng mặc định hiện khởi tạo 48 t. [Giới hạn hiện hành](Specification.md#giới-hạn-đã-biết)
 
 Trong 65 kịch bản, **14** đổi lưu lượng/tồn kho/độ ẩm hoặc đại lượng cân bằng theo thiết bị, **26** từng có chuyển damper bypass ở bản Pha B ban đầu, và **8** đổi ít nhất một trạng thái chạy hoặc lý do trip. Các nhóm có thể trùng. So sánh trường vật lý cũ dùng sai số tuyệt đối 1e-8 cho danh sách này. Kiểm thử baseline dùng sai số riêng theo đơn vị trong plant.
 

@@ -5,6 +5,8 @@
 **Phạm vi:** Nhà máy xi măng giả định, từ tiếp nhận nguyên liệu đến xi măng bao và xi măng rời. Không phải tài liệu hoàn công (as-built) của một nhà máy cụ thể.  
 **Mục đích:** Tài liệu nguồn Markdown để thiết kế Process Graph, mô hình thiết bị, mô hình vật lý, fault propagation, telemetry và giao diện Engineering Explorer.
 
+**Hiện trạng:** Các bảng thiết kế ở mục 3 liệt kê cả thông số dự kiến. Mục 4 ghi phạm vi đã triển khai, giới hạn hiện biết và các ca đề xuất. Explorer lấy số đo live từ catalog công bố.
+
 > **Lưu ý về nguồn:** Nội dung chi tiết phía dưới được chuyển từ các tài liệu DOCX đã soạn trong dự án. Có thể có phần trùng lặp giữa các phiên bản. Các trị số, ngưỡng, công thức rút gọn và cấu hình component phải được kiểm chứng/hiệu chỉnh trước khi sử dụng như thông số thực tế.
 
 ## 1. Kiến trúc và phạm vi cố định
@@ -187,6 +189,8 @@ Chuỗi quy trình: BN-101 → WF-201 → RM-201 → SP-201 → SL-301; dòng th
 | Fault → tác động               | Separator speed sai, rotor trip → quá thô, tăng hồi lưu hoặc giảm sản lượng    |
 
 ### P04 Chuyển bột liệu
+
+Bảng này mô tả tuyến vật liệu từ SP-201 đến SL-301. Explorer hiển thị dưới dạng dòng chuyển. Mã Process `Z01-L02-P04` trong Explorer là **Gas Handling** của FN-201 theo mục 3.3.3.
 
 | Mục                            | Mô tả                                                                       |
 |--------------------------------|-----------------------------------------------------------------------------|
@@ -1547,6 +1551,10 @@ BC-501 công bố tốc độ thực của băng và proxy tốc độ pulley ch
 `bc501_belt_slip_ramp` dùng một phút đầu ở trạng thái không trượt, sau đó tăng mức trượt 0,10, 0,20, 0,30 cách nhau 60 s. Năng lực băng giảm theo fault `belt.slip` hiện có. Ca này có fixture hai vân tay riêng. Các cảnh báo nhiệt H/HH vẫn hiệu lực khi dừng, còn dòng và rung áp dụng sau khởi động. Chất lượng BAD của cân và radar SL-401 có cảnh báo đầu đo riêng. Tag và alarm mới nằm trong allowlist catalog hiện có.
 
 ## 4. Trạng thái triển khai
+
+Plant mặc định gồm 4 zone, 7 line và 33 cụm thiết bị. Có 68 ca mô phỏng đăng ký. Catalog mặc định có 448 tag, gồm 238 tag vận hành, 207 cảnh báo và 3 tag lab (free lime và hai kênh Blaine). Z01 có 73/47/0, Z02 có 58/70/1, Z03 có 62/60/2, Z04 gồm SL-401 có 45/30/0, theo thứ tự vận hành/cảnh báo/lab.
+
+Explorer chạy live ở bước 1 s, lưu phiên trong bộ nhớ máy chủ. CLI export chạy theo bước 60 s của plant mặc định. API và export dùng catalog làm allowlist, còn trạng thái nội bộ và sự kiện có thể xem qua `ground_truth` khi bật chẩn đoán.
 
 PC-301 bổ sung áp gauge cửa ra, ΔP buồng và lưu lượng gió ba dưới dạng tín hiệu thụ động. Áp gauge suy theo draft CF-301, ΔP theo bình phương lưu lượng CF-301, gió ba theo tích tỷ lệ lưu lượng quạt cooler và ID fan. Các hệ số và ngưỡng đều giả định. H/HH áp dụng theo quạt hút đã ổn định. L/LL gió ba chỉ đánh giá khi lưu lượng nhiên liệu vật lý PC-301 dương. Damper PC-301 chờ nguồn phản hồi độc lập.
 

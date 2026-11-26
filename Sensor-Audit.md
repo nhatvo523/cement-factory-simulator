@@ -1,6 +1,6 @@
 # Kiểm kê tín hiệu equipment — Bước 0
 
-Mốc khảo sát là `f1bc06b`. Bảng bao phủ 33 equipment, 4 zone và 7 line. Đã quét các frame của 65 kịch bản đăng ký, gồm baseline và 64 kịch bản lỗi, sau đó đối chiếu với backend, cấu hình plant, phần hiển thị Explorer, đặc tả và test. Các nhóm A/B/C/D bên dưới là **đề xuất để duyệt**. Các tag ở cột D chưa được triển khai.
+Mốc khảo sát là `f1bc06b`. Bảng bao phủ 33 equipment, 4 zone và 7 line. Đã quét các frame của 65 kịch bản đăng ký tại mốc đó, gồm baseline và 64 kịch bản lỗi, rồi đối chiếu với backend, cấu hình plant, Explorer, đặc tả và test. Các nhóm A/B/C/D lưu đề xuất ban đầu. Các mục theo từng bước ghi những thay đổi đã triển khai sau khảo sát. [Số tag và kịch bản hiện hành](README.md#hiện-trạng-mô-phỏng)
 
 - **A** — Kênh có phép đo hoặc phản hồi thiết bị tương ứng, giữ tên/ý nghĩa hiện tại. Việc thêm metadata và chuẩn hóa hành vi phổ biến sẽ thực hiện ở bước sau.
 - **B** — Có thể đo bằng phần cứng thực tế, nhưng cần chốt vị trí, hiệu chỉnh cách mô phỏng hoặc loại kênh trùng. Chỉ đưa vào danh mục SCADA khi xác định được điểm đo.
@@ -19,7 +19,7 @@ Mốc khảo sát là `f1bc06b`. Bảng bao phủ 33 equipment, 4 zone và 7 lin
 | C · Trạng thái và sự kiện | RUN/TRIP là tag riêng từ trạng thái thiết bị. Lý do trip, sự kiện chèn lỗi, tình trạng solver và cân bằng vật chất chỉ có trong `ground_truth` khi bật rõ ràng. |
 | D · Hạng mục chuyển tiếp | Giữ toàn bộ đề xuất bổ sung điểm đo ở cột D cho Bước 2. Dải tag Bước 1 là dải cấu hình giả định. Hiệu chuẩn theo OEM, bão hòa, độ trễ và đáp ứng tín hiệu thuộc các bước sau. |
 
-Hiện công bố 147 tag (Z01: 52, Z02: 33, Z03: 34, Z04: 28). Trong 181 cặp thiết bị/trường đo cũ, 92 tên trường không còn công bố theo dạng cũ, gồm các trường đã loại và trường đã đổi điểm đo. Ngoài số này, toàn bộ bản sao trạng thái vật lý từng thiết bị đã rời payload mặc định. Hai bảng và phụ lục bên dưới giữ nguyên mốc Bước 0 để đối chiếu.
+Tại mốc Bước 1, catalog công bố 147 tag (Z01: 52, Z02: 33, Z03: 34, Z04: 28). Trong 181 cặp thiết bị/trường đo cũ, 92 tên trường không còn công bố theo dạng cũ, gồm các trường đã loại và trường đã đổi điểm đo. Ngoài số này, toàn bộ bản sao trạng thái vật lý từng thiết bị đã rời payload mặc định. [Số tag hiện hành](README.md#hiện-trạng-mô-phỏng)
 
 ## Bước 2 — Z02, Pha A
 
@@ -159,7 +159,7 @@ WFA-F02 và WFB-F02 mới được mô tả trong đặc tả. Solver đang dùn
 
 | Tuyến | Tag nhận `transport_delay_s` | Trạng thái và trễ |
 |---|---|---|
-| KL-301 → đầu ghi CL-301 | `CL-301.inlet.clinker_temperature_c` | Cần thêm, đề xuất 3 s. Nguồn nhiệt clinker tại cửa lò cần xác nhận |
+| KL-301 → đầu ghi CL-301 | — | Đã bỏ đề xuất 3 s |
 | Qua ghi cooler | `CL-301.cooler_outlet.temperature_c` | Đã có, giữ 0 s trễ truyền. Cần chiều dài ghi hữu hiệu trước khi đề xuất giá trị, đồng thời tránh chồng lên quán tính nhiệt |
 | CL-301 → SL-302 | `SL-302.inlet_conveyor.measured_flow_tph` | Cần thêm, đề xuất 30 s nếu lấy nguồn từ dòng ra cooler |
 | BC-101 → ST-101 | `ST-101.inlet_conveyor.measured_flow_tph` | Cần thêm nếu có điểm cân. Buffer solver đã giữ 1 bước, đề xuất 0 s bổ sung nếu lấy nguồn ngay đầu nhận |
@@ -172,11 +172,11 @@ Các tag đề xuất ngoài phạm vi Z04 chờ duyệt, các giá trị trễ 
 
 ### Rà soát mức kho trong baseline 2 giờ
 
-[Chuỗi mức 120 mẫu](Silo-Level-Baseline.csv) dùng bước 60 s, có conditioning và tắt nhiễu đầu đo. Trong 30 phút cuối, ST-101 dao động 13,6–14,0%, trung vị 13,7%. L 15% đang bật ở cả 120 mẫu và áp dụng mọi chế độ. Đây là vùng quan sát sau 2 giờ, chưa chứng minh điểm cân bằng dài hạn. Trung vị các tag còn lại là BN-101 24,4%, SL-301 62,3%, SL-302 15,4%, SL-401 A 31,65% và B 33,9%.
+[Chuỗi mức lịch sử 120 mẫu](Silo-Level-Baseline.csv) dùng tồn đầu ST-101 **35 t**, bước 60 s, có conditioning và tắt nhiễu đầu đo. Trong 30 phút cuối, ST-101 dao động 13,6–14,0%, trung vị 13,7%. L 15% bật ở cả 120 mẫu của lần chạy đó. Trung vị các tag còn lại là BN-101 24,4%, SL-301 62,3%, SL-302 15,4%, SL-401 A 31,65% và B 33,9%.
 
-Kiểm tra bổ sung baseline 48 giờ trên mức vật lý ST-101 cho thấy trung vị giờ 8 là 11,02%, giờ 24 là 3,39% và giờ 48 là 0,69% (0,67–0,74%). Mức gần cạn là kết quả cấu hình hiện tại, không dùng làm mục tiêu vận hành.
+Lượt khảo sát riêng dài 48 giờ với cùng tồn đầu 35 t cho trung vị mức vật lý ST-101 ở giờ 8 là 11,02%, giờ 24 là 3,39% và giờ 48 là 0,69% (0,67–0,74%).
 
-Đề xuất `normal_kind: state_dependent` cho cả sáu tag mức, chờ duyệt cùng mục tiêu tồn theo chế độ. Catalog đã bổ sung normal cho 37 analog còn lại. Lượt metadata giữ nguyên các luật cảnh báo vì chưa xác nhận được permissive độc lập cho các đề xuất L ở bảng khảo sát. Cảnh báo L gió ba PC-301 dùng nguồn nhiên liệu PC-301 trong lượt bổ sung kênh riêng.
+Catalog hiện đặt `normal_kind: state_dependent` cho cả sáu tag mức và tham chiếu khởi động ST-101 là 20% (48 t). Ngưỡng ST-101 giữ L/LL 15%/8%. Các fixture phát hành vẫn ghim 35 t. Cảnh báo L gió ba PC-301 dùng nguồn nhiên liệu PC-301. [Giới hạn hiện hành](Specification.md#giới-hạn-đã-biết)
 
 ### Công suất điện ước tính Z01/Z02
 

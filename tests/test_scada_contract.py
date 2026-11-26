@@ -27,6 +27,13 @@ class ScadaContractTest(unittest.TestCase):
                 continue
             cls.allowed.setdefault(tag["device_id"], set()).add(tag["tag_id"])
 
+    def test_explorer_embeds_current_specification_for_offline_reference(self):
+        html = (ROOT / "UI/Explorer.html").read_text(encoding="utf-8")
+        prefix = "const specification = "
+        embedded = next(line.removeprefix(prefix) for line in html.splitlines() if line.startswith(prefix))
+        self.assertEqual(json.loads(embedded.removesuffix(";")),
+                         (ROOT / "Specification.md").read_text(encoding="utf-8"))
+
     def assert_public_frame(self, frame):
         self.assertEqual(set(frame) - {"lab", "alarms"}, {"time_s", "measurements"})
         lab_tags = {(tag["device_id"], tag["tag_id"]) for tag in self.tags if tag.get("channel") == "lab"}
