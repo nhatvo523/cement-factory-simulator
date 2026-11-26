@@ -1594,3 +1594,19 @@ CR-101, RM-201, RC-101, FN-201, KL-301 và CF-301 công bố kW ước tính the
 - Phản hồi vị trí và hút bụi SP-502, gross/tare WS-502, loại bao theo cân và kW Z04.
 - Điều chỉnh severity trên giao diện/API.
 - Hiệu chỉnh tham số và ngưỡng cảnh báo theo dữ liệu historian.
+
+### Đề xuất nghiệm thu chéo toàn nhà máy
+
+Các ca dưới đây là thiết kế kiểm tra, chờ duyệt. Chạy từ cấu hình mặc định 48 t, lấy baseline cùng seed làm đối chứng. Dùng bước 1 s quanh các chuyển tiếp cần kiểm tra thứ tự và bước 60 s cho xu hướng dài. So số đo SCADA, đối chiếu trạng thái và cân bằng từ `ground_truth` trong kiểm thử.
+
+| Ca đề xuất | Thời lượng và sự kiện | Tín hiệu so sánh | Tiêu chí đạt |
+|---|---|---|---|
+| CF-301 trip | 120 phút, chèn lúc 10 phút | CF RUN/TRIP, A/kW, draft, PH nhiệt tầng trên, khí vào/ra RM, mức SL-301/302, dòng cấp CM và xuất Z04 | CF trip và tải điện giảm, mất draft trước khi nhiệt suy rõ. RM giảm khả năng sấy. Tồn silo đệm các tuyến nhận liệu, còn khả năng xuất Z04 tuân theo tồn từng ô. Dừng lò che điều kiện bypass của hệ nghiền liệu |
+| Thiếu nhiệt RM-201 | 90 phút, giảm khí/nhiệt từ phút 10, dùng hai mức thiếu | Khí vào/ra RM, lưu lượng WF, trạng thái mill, ẩm và chất lượng SL-301 trong chẩn đoán | Thiếu vừa giảm lưu lượng và giữ ẩm đích trong dung sai solver. Thiếu sâu có thể vượt ẩm đích và đánh dấu liệu ẩm trước khi tồn SL-301 phản ánh chất lượng mới |
+| SP-401A suy giảm | 90 phút, ramp từ phút 10 | Tốc độ, A, ΔP SP-A, A/kW CM-A, hồi lưu nội bộ, Blaine lab, mức SL-401 A/B | Hồi lưu và tải quan sát tăng theo ramp, RUN giữ, TRIP tắt. Blaine kỳ vọng ổn định trong sai số lab. Ô A phản ánh dòng sản phẩm, tuyến B chỉ phản ứng qua nguồn hay tồn dùng chung |
+| PK-501 kẹt | 90 phút, phút 10 | Bit lỗi PK, dòng và bao/phút, bộ đếm PK/BC/LD, FD-501/502 và mức hai ô SL-401 | PK ngừng tạo bao, xung đã phát còn tới BC trong cửa sổ 20 s. Ô A ngừng rút và có thể tích lũy; nhánh rời tiếp tục theo tồn B và lịch đổi xe |
+| Trip nối tiếp | 120 phút, CF-301 phút 10, SP-401A phút 25, PK-501 phút 40 | RUN/TRIP và dòng từng thiết bị, nhiệt RM/CM, mức SL-302 và hai ô SL-401, lưu lượng xuất | Sự kiện đúng thứ tự, mỗi thiết bị phản ánh đúng trip, nhiệt và tồn phản ứng theo thời gian. Lỗi sau không xóa lỗi trước và không xuất kho vượt số dư |
+| Crusher dừng | 90 phút, phút 10 | Lưu lượng BC, mức và L/LL ST, lưu lượng RC, mức BN và cấp RM | L/LL theo thứ tự, tiếp theo là hết liệu và suy giảm hạ nguồn. Lượt khảo sát bước 60 s cho L/LL/cạn kho lúc **19/29/40 phút** từ đầu ca, tức **9/19/30 phút** sau lỗi |
+| Thiếu nguồn một nửa | 90 phút, giới hạn crusher 50 t/h từ phút 10 | Cùng điểm đo ca crusher dừng, thêm dấu hiệu RC bị giới hạn bởi tồn đầu bước | L/LL xuất hiện muộn hơn ca mất cấp hoàn toàn. Lượt khảo sát bước 60 s cho L/LL lúc **26/46 phút** từ đầu ca. RC bắt đầu dùng hết tồn khả dụng tại **68 phút** (sau lỗi **58 phút**). Lượng vào tiếp diễn giữ tồn cuối bước khoảng 0,8 t, vì vậy chưa chạm 0 t |
+
+Các mốc quan sát là điểm đối chiếu cho đúng cấu hình và bước 60 s. Kiểm tra mức vật lý, alarm đã qua conditioning và thời điểm thiếu liệu là ba sự kiện riêng. Tất cả ca cần giữ cân bằng vật liệu trong dung sai solver, payload theo allowlist và kết quả tái lập với cùng seed.
