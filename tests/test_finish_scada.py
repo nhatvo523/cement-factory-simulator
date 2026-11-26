@@ -7,7 +7,8 @@ from factory_sim.core.config import load_plant, load_scenario, read_json
 from factory_sim.core.engine import simulate
 from factory_sim.core.signal_conditioning import conditioned_value
 from factory_sim.core.telemetry import electrical_power, load_tag_config, public_frames
-from factory_sim.server import CONFIGS, EFFICIENCY_SCENARIOS, ExplorerHandler, LiveOperation, SCENARIOS
+from factory_sim.server import (AVAILABLE_SCENARIOS, CONFIGS, EFFICIENCY_SCENARIOS,
+                                ExplorerHandler, LiveOperation, SCENARIOS)
 from solver_fingerprint import solver_fingerprints
 
 
@@ -31,7 +32,23 @@ class FinishScadaTest(unittest.TestCase):
     def reading(frame, tag):
         return frame["measurements"][tag.split(".")[0]][tag]
 
+    def test_separator_current_alarm_is_110_percent_of_rated_current(self):
+        tags = {tag["tag_id"]: tag for tag in self.catalog["tags"]}
+        for side in "AB":
+            with self.subTest(side=side):
+                current_id = f"SP-401{side}.separator_drive.current_a"
+                current = tags[current_id]
+                alarm = tags[f"{current_id}.alarm_H"]["rule"]
+                self.assertEqual(current["rated_current_a"], 40)
+                self.assertEqual(current["alarm"]["H"], 44)
+                self.assertAlmostEqual(current["alarm"]["H"] / current["rated_current_a"], 1.10)
+                self.assertEqual(alarm["input_tag"], current_id)
+                self.assertEqual(alarm["by_mode"], {"RUNNING": 44})
+
     def test_efficiency_ramps_have_separate_fingerprints_and_coordinated_readings(self):
+        self.assertEqual(len(SCENARIOS), 65)
+        self.assertEqual(len(AVAILABLE_SCENARIOS), 67)
+        self.assertEqual(len(set(AVAILABLE_SCENARIOS)), 67)
         hashes = read_json(Path(__file__).with_name("z03_efficiency_loss_fingerprints.json"))
         self.assertFalse(set(SCENARIOS) & hashes.keys())
         api = ExplorerHandler.__new__(ExplorerHandler)

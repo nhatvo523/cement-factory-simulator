@@ -85,7 +85,7 @@ Hiệu chỉnh sau gồm đường nền rung, ngưỡng cuộn dây CR-101, qua
 
 ## Z03 — Lượt 1
 
-Z03 có **62 tag vận hành, 60 cảnh báo và 2 tag lab**. Thêm 24 tag vận hành cho WF, CM, SP và FN của hai tuyến A/B. Các giá trị suy ra, dải đo và ngưỡng đánh dấu `assumed`. Các zone khác không đổi danh mục. Dòng định mức SP-401A/B giả định **40 A**, normal 30 A và H 42 A, tương ứng 105% định mức.
+Z03 có **62 tag vận hành, 60 cảnh báo và 2 tag lab**. Thêm 24 tag vận hành cho WF, CM, SP và FN của hai tuyến A/B. Các giá trị suy ra, dải đo và ngưỡng đánh dấu `assumed`. Các zone khác không đổi danh mục. Dòng định mức SP-401A/B giả định **40 A**, normal 30 A và H 44 A, tương ứng 110% định mức.
 
 | Nhóm | Nguồn / giả định |
 |---|---|

@@ -1528,12 +1528,22 @@ Nhiệt khí ra RM-201 dùng chỉ thị giả định quanh 95 °C và cảnh b
 
 ### Z03 — Lượt 1, công bố số đo và kịch bản phân ly
 
+Ngưỡng H dòng rotor SP-401A/B là 44 A, bằng 110% định mức giả định 40 A. Các ca hiện có chưa kích được cảnh báo áp dầu L/LL của CM-401A/B khi mill đang chạy vì chưa có kịch bản lỗi dầu.
+
 Cả hai tuyến WF/CM/SP/FN-401 công bố dòng truyền động. CM và FN thêm kW điện ước tính theo điện áp giả định, dòng thực trước nhiễu và cosφ nội suy theo tỷ lệ dòng trên định mức. RNG nhiễu của A và kW tách theo tag. Nhiệt khí ra CM phụ thuộc công suất, gió và mòn. Nhiệt còn quán tính khi dừng. Áp dầu CM mô phỏng dốc lên/xuống theo trạng thái chạy và trôi nhẹ theo nhiệt ổ trục. Các phép suy ra chạy ở lớp công bố, không can thiệp dòng vật liệu hoặc trip solver. Công thức, lịch Blaine, che cảnh báo và giả định ghi trong [Sensor-Audit.md](Sensor-Audit.md).
 
 Blaine của sản phẩm sau SP-401A/B chỉ công bố trong kênh lab theo thời điểm lấy mẫu và trả kết quả. Kịch bản `underspeed` làm giảm tốc rotor và giảm Blaine theo proxy. Kịch bản `efficiency_loss` giảm tỷ lệ sản phẩm mịn khả dụng và tăng hồi lưu, giữ tốc độ rotor và Blaine kỳ vọng của mác. Lưu lượng phối liệu theo thành phần, phun nước, kWh/t, tải mill và tải tuần hoàn giữ nội bộ.
 
-Hai kịch bản mới `cement_separator_a_efficiency_loss` và `cement_separator_b_efficiency_loss` giảm `fines_fraction` lần lượt từ 0,58 xuống 0,50 và 0,56 xuống 0,48 qua tám bước một phút. Lịch live dùng `offset_s` tính từ bước đầu áp inject. Khi không khai báo offset, sự kiện live áp ở bước kế tiếp. Hai ca lưu vân tay vật liệu riêng và không thay thế fixture 65 kịch bản cũ.
+Hai kịch bản mới `cement_separator_a_efficiency_loss` và `cement_separator_b_efficiency_loss` giảm `fines_fraction` lần lượt từ 0,58 xuống 0,50 và 0,56 xuống 0,48 qua tám bước một phút. Lịch live dùng `offset_s` tính từ bước đầu áp inject. Khi không khai báo offset, sự kiện live áp ở bước kế tiếp. Bộ kịch bản hiện có **67 ca** gồm 65 ca cũ (kể cả baseline) và hai ca mới. Bộ 65 ca cũ dùng fixture vân tay vật liệu và nhiệt/chất lượng. Hai ca mới có fixture vân tay vật liệu riêng.
 
 ## 4. Trạng thái triển khai
 
-Tài liệu là **đặc tả mô phỏng**, chưa phải bằng chứng hệ thống simulation đã chạy. Engineering Explorer HTML là công cụ duyệt kiến trúc; dữ liệu mô phỏng, phương trình đã hiệu chỉnh, điều khiển thời gian thực và kiểm thử end-to-end là các phần cần triển khai/kiểm chứng riêng.
+### Chưa làm trong bản này
+
+- WFA-F02/WFB-F02 và các tag lưu lượng thành phần theo từng tuyến. Mô hình hiện dùng tỷ lệ phối liệu cố định.
+- Hoàn thiện metadata giá trị bình thường. Danh mục phát hành có 77/120 tag analog có `normal`, còn thiếu 43 tag.
+- Độ trễ vận chuyển xuyên zone.
+- Hoàn thiện bộ kênh đo của PC-301.
+- Test cân bằng mức SL-302 và từng ô vật lý của SL-401.
+- Mở rộng bộ tín hiệu và cảnh báo Z04 theo phạm vi nghiệm thu của các zone trước.
+- Hiệu chỉnh tham số và ngưỡng cảnh báo theo dữ liệu historian.
