@@ -1550,12 +1550,32 @@ BC-501 công bố tốc độ thực của băng và proxy tốc độ pulley ch
 
 PC-301 bổ sung áp gauge cửa ra, ΔP buồng và lưu lượng gió ba dưới dạng tín hiệu thụ động. Áp gauge suy theo draft CF-301, ΔP theo bình phương lưu lượng CF-301, gió ba theo tích tỷ lệ lưu lượng quạt cooler và ID fan. Các hệ số và ngưỡng đều giả định. H/HH áp dụng theo quạt hút đã ổn định. L/LL gió ba chỉ đánh giá khi lưu lượng nhiên liệu vật lý PC-301 dương. Damper PC-301 chờ nguồn phản hồi độc lập.
 
+### Giới hạn đã biết
+
+ST-101 mặc định bắt đầu ở 48 t trên sức chứa 240 t (20%). Ngưỡng L/LL giữ 15%/8%. Sáu tag mức của ST-101, BN-101, SL-301, SL-302 và hai ô SL-401 có `normal_kind: state_dependent`. Giá trị 20% của ST-101 là mốc khởi động. Các fixture phát hành tiếp tục chạy với tồn đầu 35 t. Kiểm thử hành vi mặc định dùng 48 t.
+
+Ở baseline liên tục, lượng vào thấp hơn lượng ra khoảng 1,1 t/h. Từ 20%, ST-101 chạm L sau khoảng 11 giờ và LL sau khoảng 26 giờ theo ước tính cân bằng. Lượt chạy bước 60 s ghi nhận cảnh báo đầu tiên khoảng 10 giờ 16 phút và 25 giờ 01 phút. Dao động tín hiệu làm thời điểm báo khác thời điểm mức vật lý qua ngưỡng. CSV baseline lịch sử ghi riêng cấu hình 35 t trong 2 giờ.
+
+Nếu bắt đầu ở 20%, lấy lượng ra khoảng 100 t/h và giả định lượng vào giảm ngay, thời gian ước tính như sau.
+
+| Lượng vào | Chạm L 15% | Chạm LL 8% | Cạn theo cân bằng đơn giản |
+|---|---:|---:|---:|
+| Dừng hẳn | 7 phút | 17 phút | 29 phút |
+| Còn một nửa | 14 phút | 35 phút | 58 phút |
+
+Thời điểm thực còn phụ thuộc tồn trên băng, thời điểm chèn lỗi, giới hạn thu hồi và dao động tải. Với lượng vào còn một nửa, kho có thể giữ một lượng đệm nhỏ khi RC-101 đã bị giới hạn bởi liệu sẵn có.
+
+### Vòng thay đổi solver sau
+
+- Điều khiển cấp liệu hoặc thu hồi theo mức ST-101 và nhu cầu BN-101. Hiện kho thiếu cơ chế điều hòa chênh lệch cấp–rút theo mức.
+- WFA-F02/WFB-F02 và định lượng thành phần theo từng tuyến.
+- Bảo vệ trip ổ trục CM-401A/B.
+- Buffer và vận chuyển từng bao.
+
 ### Chưa làm trong bản này
 
-- WFA-F02/WFB-F02 và các tag lưu lượng thành phần theo từng tuyến. Mô hình hiện dùng tỷ lệ phối liệu cố định.
-- Xác nhận metadata `normal_kind: state_dependent` hoặc mục tiêu vận hành theo chế độ cho sáu tag mức kho còn mở.
 - Độ trễ vận chuyển xuyên zone.
 - Phản hồi damper PC-301.
-- Phản hồi vị trí và hút bụi SP-502, gross/tare WS-502, buffer bao, loại bao theo cân và kW Z04.
-- Bảo vệ trip ổ trục CM-401A/B và điều chỉnh severity trên giao diện/API.
+- Phản hồi vị trí và hút bụi SP-502, gross/tare WS-502, loại bao theo cân và kW Z04.
+- Điều chỉnh severity trên giao diện/API.
 - Hiệu chỉnh tham số và ngưỡng cảnh báo theo dữ liệu historian.
