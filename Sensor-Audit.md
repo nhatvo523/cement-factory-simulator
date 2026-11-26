@@ -155,6 +155,21 @@ WFA-F02 và WFB-F02 mới được mô tả trong đặc tả. Solver đang dùn
 
 ## Z04 — Đóng bao và xuất hàng
 
+### Điểm nhận đề xuất cho độ trễ đo lường
+
+| Tuyến | Tag nhận `transport_delay_s` | Trạng thái và trễ |
+|---|---|---|
+| KL-301 → đầu ghi CL-301 | `CL-301.inlet.clinker_temperature_c` | Cần thêm, đề xuất 3 s. Nguồn nhiệt clinker tại cửa lò cần xác nhận |
+| Qua ghi cooler | `CL-301.cooler_outlet.temperature_c` | Đã có, giữ 0 s trễ truyền. Cần chiều dài ghi hữu hiệu trước khi đề xuất giá trị, đồng thời tránh chồng lên quán tính nhiệt |
+| CL-301 → SL-302 | `SL-302.inlet_conveyor.measured_flow_tph` | Cần thêm, đề xuất 30 s nếu lấy nguồn từ dòng ra cooler |
+| BC-101 → ST-101 | `ST-101.inlet_conveyor.measured_flow_tph` | Cần thêm nếu có điểm cân. Buffer solver đã giữ 1 bước, đề xuất 0 s bổ sung nếu lấy nguồn ngay đầu nhận |
+| RC-101 → BN-101 | `BN-101.inlet_conveyor.measured_flow_tph` | Cần thêm, đề xuất 10 s nếu lấy nguồn từ RC-101 |
+| SP-401A/B → SL-401 A/B | `SL-401.cell_A.inlet_flow_tph`, `SL-401.cell_B.inlet_flow_tph` | Cần thêm, đề xuất 20 s mỗi tuyến nếu lấy nguồn tại điểm phát |
+| PK-501 → BC-501 | `BC-501.discharge.bags_count` | Thêm ở Z04, 20 s giả định từ 15 m / 0,75 m/s. Dịch luồng xung một lần |
+| Nhiệt khí ra RM-201 | `RM-201.gas_outlet_temperature_c` | Đã có 4 s giả định, chưa có dữ liệu hình học hoặc hiệu chuẩn |
+
+Các tag đề xuất ngoài phạm vi Z04 chờ duyệt, các giá trị trễ có số đều là giả định. Test cân bằng mức dùng tồn và lưu lượng solver chưa trễ để tính tồn kỳ vọng. Chỉ khi đối chiếu PV mới áp bộ lọc và chu kỳ mẫu của đầu đo mức. Mức radar không nhận trễ từ đường vận chuyển.
+
 ### Rà soát mức kho trong baseline 2 giờ
 
 [Chuỗi mức 120 mẫu](Silo-Level-Baseline.csv) dùng bước 60 s, có conditioning và tắt nhiễu đầu đo. Trong 30 phút cuối, ST-101 dao động 13,6–14,0%, trung vị 13,7%. L 15% đang bật ở cả 120 mẫu và áp dụng mọi chế độ. Đây là vùng quan sát sau 2 giờ, chưa chứng minh điểm cân bằng dài hạn. Trung vị các tag còn lại là BN-101 24,4%, SL-301 62,3%, SL-302 15,4%, SL-401 A 31,65% và B 33,9%.
