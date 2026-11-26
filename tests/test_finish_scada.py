@@ -55,7 +55,7 @@ class FinishScadaTest(unittest.TestCase):
         for side, name in zip("AB", EFFICIENCY_SCENARIOS, strict=True):
             with self.subTest(side=side):
                 raw = self.raw(name)
-                self.assertEqual(solver_fingerprints(raw)["material"], hashes[name])
+                self.assertEqual(solver_fingerprints(raw), hashes[name])
                 ramp = raw[10:19]
                 separator = f"SP-401{side}"
                 measured = self.project(raw, noise_enabled=False)[10:19]

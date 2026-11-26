@@ -1,4 +1,10 @@
 {
-  "cement_separator_a_efficiency_loss": "96ac57cc1ff06f7b8f43fce355e7788db85dcc2d77624bba15f88f78a41a46fe",
-  "cement_separator_b_efficiency_loss": "c9845974a34a773640924a4f2ab43dec80f75e43bfa6bb73ebc28ba968f18623"
+  "cement_separator_a_efficiency_loss": {
+    "material": "96ac57cc1ff06f7b8f43fce355e7788db85dcc2d77624bba15f88f78a41a46fe",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  },
+  "cement_separator_b_efficiency_loss": {
+    "material": "c9845974a34a773640924a4f2ab43dec80f75e43bfa6bb73ebc28ba968f18623",
+    "thermal_quality": "47919f5db0726f46483ec0c07e9e7e48f7562fe9f2332e09b6c3efcc396859e1"
+  }
 }
