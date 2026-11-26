@@ -11,6 +11,7 @@ from urllib.request import Request, urlopen
 
 from factory_sim.core.config import load_plant, load_scenario, read_json
 from factory_sim.core.engine import simulate
+from factory_sim.core.telemetry import load_tag_config
 from factory_sim.server import CONFIGS, ROOT, SCENARIOS, ExplorerHandler
 
 
@@ -18,7 +19,7 @@ class ScadaContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.plant, cls.assets = load_plant(CONFIGS / "model_types", CONFIGS / "plants/bulk_material_line.json")
-        cls.tags = read_json(CONFIGS / "operating_profiles/equipment_tags.json")["tags"]
+        cls.tags = load_tag_config(CONFIGS / "model_types", cls.assets, cls.plant)["tags"]
         cls.allowed = {}
         for tag in cls.tags:
             if tag.get("channel"):

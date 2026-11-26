@@ -127,6 +127,9 @@ def load_scenario(path, assets):
     for event in scenario["events"]:
         if type(event["at_s"]) is not int or not 0 <= event["at_s"] < scenario["duration_s"]:
             raise ValueError(f"Event outside scenario: {event}")
+        offset = event.get("offset_s", 0)
+        if type(offset) is not int or not 0 <= offset <= event["at_s"]:
+            raise ValueError(f"Invalid injection offset: {event}")
         key, parameter = event["target"].split(".", 1)
         if "." in parameter:
             component, fault = parameter.split(".", 1)

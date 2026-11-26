@@ -16,8 +16,9 @@ def solve_result(model_directory, plant_path, scenario_path, fault_schedule=(), 
             raise ValueError("Invalid fault injection time")
         offset = min(event["at_s"] for event in fault["events"])
         for event in fault["events"]:
-            event_time = at_s + event["at_s"] - offset
-            scenario["events"].append({**event, "at_s": event_time})
+            event_time = at_s + event.get("offset_s", event["at_s"] - offset)
+            scheduled = {key: value for key, value in event.items() if key != "offset_s"}
+            scenario["events"].append({**scheduled, "at_s": event_time})
             scenario["duration_s"] = max(scenario["duration_s"], event_time + 5400)
     result = {
         "schema_version": 1,

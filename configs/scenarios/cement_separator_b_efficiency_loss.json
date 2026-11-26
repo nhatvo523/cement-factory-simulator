@@ -1,0 +1,61 @@
+{
+  "id": "cement_separator_b_efficiency_loss",
+  "duration_s": 5400,
+  "operating_profile": "zone1_operation",
+  "events": [
+    {
+      "at_s": 600,
+      "offset_s": 0,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.56
+    },
+    {
+      "at_s": 660,
+      "offset_s": 60,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.55
+    },
+    {
+      "at_s": 720,
+      "offset_s": 120,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.54
+    },
+    {
+      "at_s": 780,
+      "offset_s": 180,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.53
+    },
+    {
+      "at_s": 840,
+      "offset_s": 240,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.52
+    },
+    {
+      "at_s": 900,
+      "offset_s": 300,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.51
+    },
+    {
+      "at_s": 960,
+      "offset_s": 360,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.5
+    },
+    {
+      "at_s": 1020,
+      "offset_s": 420,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.49
+    },
+    {
+      "at_s": 1080,
+      "offset_s": 480,
+      "target": "SP-401B.fines_fraction",
+      "value": 0.48
+    }
+  ]
+}

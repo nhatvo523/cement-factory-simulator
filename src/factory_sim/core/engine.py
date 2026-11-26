@@ -135,10 +135,13 @@ def simulate(plant, assets, scenario, live_events=None):
 
     starts = range(0, scenario["duration_s"], step) if live_events is None else count(0, step)
     for start in starts:
-        interval_events = events.get(start, [])
         if live_events:
-            interval_events = interval_events + [{**event, "at_s": start} for event in live_events]
+            for event in live_events:
+                due = start + event.get("offset_s", 0)
+                scheduled = {key: value for key, value in event.items() if key != "offset_s"}
+                events.setdefault(due, []).append({**scheduled, "at_s": due})
             live_events.clear()
+        interval_events = events.pop(start, [])
         for event in interval_events:
             key, name = event["target"].split(".", 1)
             if "." in name:

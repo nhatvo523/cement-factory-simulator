@@ -40,6 +40,8 @@ SCENARIOS = (
     "cement_silo_level_loss", "bag_feeder_jam", "bag_conveyor_trip",
     "bag_loader_stop", "bulk_feeder_jam", "truck_scale_signal_loss",
 )
+EFFICIENCY_SCENARIOS = ("cement_separator_a_efficiency_loss", "cement_separator_b_efficiency_loss")
+AVAILABLE_SCENARIOS = SCENARIOS + EFFICIENCY_SCENARIOS
 CONFIGS = ROOT / "configs"
 PAGES = {
     "/": ("UI/Explorer.html", "text/html; charset=utf-8"),
@@ -84,7 +86,8 @@ class LiveOperation:
             for name in faults:
                 if name not in self.faults:
                     scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", self.assets)
-                    self.pending.extend(scenario["events"])
+                    self.pending.extend({**event, "offset_s": event.get("offset_s", 0)}
+                                        for event in scenario["events"])
                     self.faults.add(name)
             if ground_truth is None:
                 ground_truth = self.tag_config.get("ground_truth_default", False)
@@ -122,7 +125,7 @@ class ExplorerHandler(BaseHTTPRequestHandler):
         faults = {}
         for entry in query.get("fault", []):
             name, _, at_s = entry.partition("@")
-            if name not in SCENARIOS[1:] or name in faults or not at_s.isascii() or not at_s.isdecimal():
+            if name not in AVAILABLE_SCENARIOS[1:] or name in faults or not at_s.isascii() or not at_s.isdecimal():
                 raise ValueError("Invalid fault selection")
             faults[name] = int(at_s)
         return [
@@ -147,7 +150,7 @@ class ExplorerHandler(BaseHTTPRequestHandler):
             ground_truth = request.get("ground_truth")
             if ((session is not None and not isinstance(session, str)) or type(reset) is not bool
                     or (ground_truth is not None and type(ground_truth) is not bool)
-                    or not isinstance(faults, list) or any(name not in SCENARIOS[1:] for name in faults)):
+                    or not isinstance(faults, list) or any(name not in AVAILABLE_SCENARIOS[1:] for name in faults)):
                 raise ValueError
         except (ValueError, TypeError, KeyError):
             self.send_json(400, {"error": "Invalid live operation request"})
@@ -175,7 +178,7 @@ class ExplorerHandler(BaseHTTPRequestHandler):
         elif url.path in ("/api/simulation", "/api/operation"):
             query = parse_qs(url.query, keep_blank_values=True)
             scenario = query.get("scenario", ["baseline"])[0]
-            if scenario not in SCENARIOS:
+            if scenario not in AVAILABLE_SCENARIOS:
                 self.send_json(400, {"error": "Unknown scenario"})
                 return
             try:
