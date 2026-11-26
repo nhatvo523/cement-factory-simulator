@@ -1565,6 +1565,17 @@ Nếu bắt đầu ở 20%, lấy lượng ra khoảng 100 t/h và giả định
 
 Thời điểm thực còn phụ thuộc tồn trên băng, thời điểm chèn lỗi, giới hạn thu hồi và dao động tải. Với lượng vào còn một nửa, kho có thể giữ một lượng đệm nhỏ khi RC-101 đã bị giới hạn bởi liệu sẵn có.
 
+### Độ trễ điểm đo
+
+Hai kênh công bố có `transport_delay_s` khác 0.
+
+| Tag | Trễ | Cơ sở |
+|---|---:|---|
+| `RM-201.gas_outlet_temperature_c` | 4 s | Giả định cho kênh nhiệt khí ra. Thời gian truyền được cấu hình riêng với quán tính và chu kỳ lấy mẫu. Hiện thiếu dữ liệu để hiệu chỉnh 4 s |
+| `BC-501.discharge.bags_count` | 20 s | Giả định băng dài 15 m và chạy 0,75 m/s. Trễ áp một lần vào xung đếm tại đầu nhận |
+
+Các điểm giao xuyên zone thiếu tag đo đầu nhận được hoãn. Bỏ đề xuất 3 s ở đầu ghi CL-301. Buffer BC-101 thuộc solver. Test cân bằng mức dùng lưu lượng và tồn solver tại bước gốc.
+
 ### Vòng thay đổi solver sau
 
 - Điều khiển cấp liệu hoặc thu hồi theo mức ST-101 và nhu cầu BN-101. Hiện kho thiếu cơ chế điều hòa chênh lệch cấp–rút theo mức.
