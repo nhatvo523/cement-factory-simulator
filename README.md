@@ -7,24 +7,44 @@
 - `configs/scenarios/` khai báo thay đổi tham số theo thời gian.
 - `tests/` kiểm tra cân bằng và tác động giữa hai Zone.
 
-## Chạy backend
+## Chạy dự án trên máy mới
 
-Chạy từ thư mục gốc bằng Python 3.10 trở lên. Backend chỉ dùng thư viện chuẩn.
+1. Cài Python 3.10 trở lên. Backend chỉ dùng thư viện chuẩn nên không cần cài thêm gói bằng `pip`.
+2. Tải repo bằng Git hoặc giải nén bản ZIP. Mở terminal tại thư mục chứa `README.md`, `src/`, `configs/` và `UI/`. Nếu dùng VS Code, mở chính thư mục này rồi chọn **Terminal → New Terminal**.
+3. Chạy lệnh tương ứng với hệ điều hành và giữ terminal mở.
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m factory_sim configs/scenarios/baseline.json --output runs/baseline.json
-python -m unittest discover -s tests -v
-```
-
-### Mở Explorer với dữ liệu Python
+### Windows (PowerShell)
 
 ```powershell
+py -3 --version
 $env:PYTHONPATH = "src"
-python -m factory_sim.server
+py -3 -m factory_sim.server
 ```
+
+Nếu máy dùng lệnh `python` thay cho `py`, chạy `python --version` và `python -m factory_sim.server` sau khi đặt `PYTHONPATH`.
+
+### macOS và Linux
+
+```bash
+python3 --version
+export PYTHONPATH=src
+python3 -m factory_sim.server
+```
+
+### Mở và dừng Explorer
 
 Mở [Explorer tại localhost](http://127.0.0.1:8000/) và chọn một thiết bị để mở cửa sổ **Thông số vận hành**. Cột phải hiển thị hồ sơ kỹ thuật. Chế độ vận hành chạy liên tục theo thời gian thực, với một bước mô hình mỗi giây. Ngay dưới thông số, chọn một hoặc nhiều lỗi rồi bấm **Áp dụng lỗi đã chọn**. Lỗi bắt đầu ở bước kế tiếp và có hiệu lực đến khi **Đặt lại mô phỏng**. Có thể đóng cửa sổ hoặc mở thiết bị khác trong cùng phiên. Tệp HTML mở trực tiếp vẫn dùng được để tra cứu, còn dữ liệu Python cần mở qua máy chủ. Ánh xạ mã thiết bị tới biến nguồn nằm trong danh mục tag.
+
+Nhấn **Ctrl+C** trong terminal để dừng. Nếu cổng 8000 đang được sử dụng, thêm `--port 8001` vào lệnh khởi động và mở [Explorer ở cổng 8001](http://127.0.0.1:8001/). Nếu gặp `No module named 'factory_sim'`, kiểm tra terminal đang ở thư mục gốc và chạy lại lệnh đặt `PYTHONPATH` trong terminal đó.
+
+### Xuất dữ liệu mẫu và chạy kiểm thử
+
+Chạy trong terminal đã đặt `PYTHONPATH`. Các lệnh dưới đây dùng Windows PowerShell. Thay `py -3` bằng `python3` trên macOS hoặc Linux.
+
+```powershell
+py -3 -m factory_sim configs/scenarios/baseline.json --output runs/baseline.json
+py -3 -m unittest discover -s tests -v
+```
 
 Đổi tên kịch bản thành `crusher_stop`, `fan_derate` hoặc `downstream_feed_stop` để sinh dữ liệu tương ứng. Các tệp JSON trong `runs/` có ID plant, ID kịch bản, đơn vị, danh mục tag và chuỗi số đo. Mốc thời gian của frame là cuối bước tính. Sự kiện được áp dụng từ đầu bước.
 
