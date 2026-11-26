@@ -1530,6 +1530,8 @@ Nhiệt khí ra RM-201 dùng chỉ thị giả định quanh 95 °C và cảnh b
 
 Ngưỡng H dòng rotor SP-401A/B là 44 A, bằng 110% định mức giả định 40 A. Các ca hiện có chưa kích được cảnh báo áp dầu L/LL của CM-401A/B khi mill đang chạy vì chưa có kịch bản lỗi dầu.
 
+Áp dầu CM công bố với bước 0,01 bar và nhiễu riêng ±0,02 bar giả định. Chênh áp mill còn phần gió khi quạt chạy sau trip. Phần liệu chỉ trong phép công bố suy theo τ 90 s giả định khi tải giảm. Cảnh báo ΔP L dùng chế độ mill ổn định, H/HH dùng chế độ quạt. Nhãn giao diện “Mòn cơ khí (ổ trục/tấm lót)” mô tả lỗi gộp. Mã fault tiếp tục là `bearing.wear`.
+
 Cả hai tuyến WF/CM/SP/FN-401 công bố dòng truyền động. CM và FN thêm kW điện ước tính theo điện áp giả định, dòng thực trước nhiễu và cosφ nội suy theo tỷ lệ dòng trên định mức. RNG nhiễu của A và kW tách theo tag. Nhiệt khí ra CM phụ thuộc công suất, gió và mòn. Nhiệt còn quán tính khi dừng. Áp dầu CM mô phỏng dốc lên/xuống theo trạng thái chạy và trôi nhẹ theo nhiệt ổ trục. Các phép suy ra chạy ở lớp công bố, không can thiệp dòng vật liệu hoặc trip solver. Công thức, lịch Blaine, che cảnh báo và giả định ghi trong [Sensor-Audit.md](Sensor-Audit.md).
 
 Blaine của sản phẩm sau SP-401A/B chỉ công bố trong kênh lab theo thời điểm lấy mẫu và trả kết quả. Kịch bản `underspeed` làm giảm tốc rotor và giảm Blaine theo proxy. Kịch bản `efficiency_loss` giảm tỷ lệ sản phẩm mịn khả dụng và tăng hồi lưu, giữ tốc độ rotor và Blaine kỳ vọng của mác. Lưu lượng phối liệu theo thành phần, phun nước, kWh/t, tải mill và tải tuần hoàn giữ nội bộ.

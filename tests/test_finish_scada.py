@@ -105,6 +105,24 @@ class FinishScadaTest(unittest.TestCase):
                 self.assertGreater(self.reading(before, tag), self.reading(after, tag))
                 self.assertGreater(self.reading(after, tag), self.reading(later, tag))
 
+    def test_mill_trip_leaves_decaying_material_pressure_and_masks_low_alarm(self):
+        for side in "AB":
+            with self.subTest(side=side):
+                device = f"CM-401{side}"
+                pressure = f"{device}.mill.differential_pressure_pa"
+                oil = f"{device}.lubrication.pressure_bar"
+                frames = self.project(self.raw(f"cement_mill_{side.lower()}_trip"), noise_enabled=False)
+                before, after, later = [self.reading(frames[index], pressure) for index in (9, 10, 13)]
+                self.assertGreater(before, after)
+                self.assertGreater(after, later)
+                self.assertGreater(later, 800)
+                self.assertLess(self.reading(frames[30], pressure), 900)
+                self.assertFalse(frames[30]["alarms"][device][pressure + ".alarm_L"])
+                tags = {tag["tag_id"]: tag for tag in self.catalog["tags"]}
+                self.assertEqual(tags[oil]["conditioning"]["resolution"], 0.01)
+                self.assertEqual(tags[oil]["conditioning"]["noise_pct_of_span"], 0.2)
+                self.assertEqual(tags[pressure + ".alarm_H"]["source"]["asset"], f"FN-401{side}")
+
     def test_blaine_underspeed_lowers_lab_result_and_efficiency_loss_preserves_it(self):
         def samples(frames):
             return {row["sampled_at_s"]: row["value"] for frame in frames

@@ -78,7 +78,7 @@ def read_source(frame, source):
     return source.get("default") if value is None else value
 
 
-def passive_target(frame, source, value):
+def passive_target(frame, source, value, term_state=None, step_s=0):
     """Weighted state proxies for display only. The solver never reads these."""
     model = source["passive_model"]
     if model.get("requires_positive_source") and (value is None or value <= 0):
@@ -86,7 +86,7 @@ def passive_target(frame, source, value):
     target = model["base"] if "base" in model else value
     if target is None:
         return None
-    for term in model.get("terms", []):
+    for index, term in enumerate(model.get("terms", [])):
         factors = []
         for factor in term["factors"]:
             observed = read_source(frame, factor)
@@ -95,7 +95,13 @@ def passive_target(frame, source, value):
             ratio = max(0, observed / factor.get("reference", 1))
             ratio = min(ratio, factor.get("max_ratio", float("inf")))
             factors.append(ratio ** factor.get("power", 1) + factor.get("offset", 0))
-        target += term["gain"] * prod(factors)
+        contribution = term["gain"] * prod(factors)
+        if term_state is not None and (tau := term.get("fall_time_constant_s")):
+            previous = term_state.get(index, contribution)
+            if contribution < previous:
+                contribution = previous + (contribution - previous) * -expm1(-step_s / tau)
+            term_state[index] = contribution
+        target += contribution
     return target
 
 
@@ -136,6 +142,7 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
     bag_count = 0
     bag_history = deque([(0, 0)])
     thermal_state = {}
+    passive_term_state = {}
     lab_state = {}
     instrument_state, alarm_state, run_since = {}, {}, {}
     settings = signal_conditioning or {}
@@ -172,7 +179,7 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
                 src = by_id[tag_id]["source"]
                 actual = read_source(frame, src)
                 if "passive_model" in src:
-                    actual = passive_target(frame, src, actual)
+                    actual = passive_target(frame, src, actual, passive_term_state.setdefault(tag_id, {}), step_s)
                 if power := src.get("electric_power"):
                     actual = electrical_power(model_value(power["current_tag"]), power)
                 if temp := src.get("mill_temperature"):
