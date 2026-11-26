@@ -222,7 +222,8 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
                 if "passive_model" in src:
                     actual = passive_target(frame, src, actual, passive_term_state.setdefault(tag_id, {}), step_s)
                 if power := src.get("electric_power"):
-                    actual = electrical_power(model_value(power["current_tag"]), power)
+                    current = actual if power.get("use_source_current") else model_value(power["current_tag"])
+                    actual = electrical_power(current, power)
                 if temp := src.get("mill_temperature"):
                     demand = model_value(temp["power_tag"])
                     if not demand:

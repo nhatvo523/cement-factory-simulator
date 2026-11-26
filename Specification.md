@@ -1520,7 +1520,7 @@ Không có tag online độ ẩm bột liệu hoặc free lime. Nhiệt khí ra 
 
 ### Z01 — Tín hiệu suy ra và cảnh báo analog
 
-Z01 công bố 69 tag vận hành và 47 tag cảnh báo. Các tag mới gồm dòng băng BC-101, lưu lượng cân băng thu hồi RC-101, dòng cân WF-201, ΔP và nhiệt ổ trục RM-201, dòng motor SP-201, cùng dòng, draft cửa hút và rung FN-201. Cấu hình suy ra, dải đo, giá trị bình thường và ngưỡng ở danh mục tag. Tín hiệu suy ra chỉ áp dụng sau khi solver hoàn tất. Nhiệt độ ổ trục mill có quán tính trước khi xử lý đo lường. Mức BN-101 vẫn dựa trên tỷ lệ đầy mô phỏng. Hiệu chỉnh radar cần hình học phần trụ và phần côn của BN-101, tương tự từng ô SL-401.
+Z01 hiện công bố 73 tag vận hành (gồm bốn tag kW) và 47 tag cảnh báo. Các tag mới gồm dòng băng BC-101, lưu lượng cân băng thu hồi RC-101, dòng cân WF-201, ΔP và nhiệt ổ trục RM-201, dòng motor SP-201, cùng dòng, draft cửa hút và rung FN-201. Cấu hình suy ra, dải đo, giá trị bình thường và ngưỡng ở danh mục tag. Tín hiệu suy ra chỉ áp dụng sau khi solver hoàn tất. Nhiệt độ ổ trục mill có quán tính trước khi xử lý đo lường. Mức BN-101 vẫn dựa trên tỷ lệ đầy mô phỏng. Hiệu chỉnh radar cần hình học phần trụ và phần côn của BN-101, tương tự từng ô SL-401.
 
 Draft FN-201 có thành phần cục bộ theo bình phương lưu lượng quạt. Thành phần ghép nhận 10% từ áp suất tầng cao nhất PH-301 và 16% từ áp suất cửa hút CF-301 theo giả định, nhân với phần hành trình damper còn nối tới tuyến sấy. Khi lò đã ngừng cấp liệu hoặc bypass mở hết, thành phần ghép về 0. Trong hành trình trở lại, nó tăng dần theo độ mở về tuyến sấy.
 
@@ -1575,6 +1575,10 @@ Hai kênh công bố có `transport_delay_s` khác 0.
 | `BC-501.discharge.bags_count` | 20 s | Giả định băng dài 15 m và chạy 0,75 m/s. Trễ áp một lần vào xung đếm tại đầu nhận |
 
 Các điểm giao xuyên zone thiếu tag đo đầu nhận được hoãn. Bỏ đề xuất 3 s ở đầu ghi CL-301. Buffer BC-101 thuộc solver. Test cân bằng mức dùng lưu lượng và tồn solver tại bước gốc.
+
+### Công suất truyền động Z01/Z02
+
+CR-101, RM-201, RC-101, FN-201, KL-301 và CF-301 công bố kW ước tính theo `√3 × V_kV × I_A × cosφ(tải)`. Dòng nguồn lấy trước nhiễu đầu đo, kW có RNG theo tag riêng. KL-301 dùng giả định cho truyền động lò. Cảnh báo tiếp tục dùng dòng, gồm H 390 A hiện có của CF-301. [Thông số và cơ sở](Sensor-Audit.md#công-suất-điện-ước-tính-z01z02)
 
 ### Vòng thay đổi solver sau
 

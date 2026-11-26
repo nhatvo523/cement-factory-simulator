@@ -178,20 +178,20 @@ Kiểm tra bổ sung baseline 48 giờ trên mức vật lý ST-101 cho thấy t
 
 Đề xuất `normal_kind: state_dependent` cho cả sáu tag mức, chờ duyệt cùng mục tiêu tồn theo chế độ. Catalog đã bổ sung normal cho 37 analog còn lại. Lượt metadata giữ nguyên các luật cảnh báo vì chưa xác nhận được permissive độc lập cho các đề xuất L ở bảng khảo sát. Cảnh báo L gió ba PC-301 dùng nguồn nhiên liệu PC-301 trong lượt bổ sung kênh riêng.
 
-### Đề xuất công suất điện Z01/Z02, chờ duyệt
+### Công suất điện ước tính Z01/Z02
 
-Đề xuất `P_kW = √3 × V_kV × I_A × cosφ(x)`, với `x = clamp(I/I_rated, 0, 1)` và cosφ nội suy giữa hệ số không tải và định mức. Dùng dòng vật lý trước nhiễu đầu đo, lấy từ `equipment` cho các dòng hiện đọc qua `measurements`, và RNG riêng cho kW. Công thức giả định hệ ba pha cân bằng và điện áp hiệu dụng dây cố định. Các số dưới đây là giả định để duyệt, cần thay bằng điện áp vận hành và số liệu nameplate/historian. Dải đo giả định, τ 0,25 s, mẫu mỗi bước, độ phân giải 0,1 kW. Dùng alarm dòng hiện có để tránh cảnh báo trùng.
+`P_kW = √3 × V_kV × I_A × cosφ(x)`, với `x = clamp(I/I_rated, 0, 1)` và cosφ nội suy giữa hệ số không tải và định mức. Dùng dòng vật lý trước nhiễu đầu đo, lấy từ `equipment` cho các dòng hiện đọc qua `measurements`, và RNG riêng cho kW. Công thức giả định hệ ba pha cân bằng và điện áp hiệu dụng dây cố định. Dải đo giả định, τ 0,25 s, mẫu mỗi bước, độ phân giải 0,1 kW. Cảnh báo tiếp tục dùng ngưỡng dòng hiện có.
 
 | Tag đề xuất | Tag dòng nguồn | kV / A định mức | cosφ không tải → định mức | Normal gần đúng / dải kW |
 |---|---|---:|---:|---:|
-| `CR-101.main_motor.power_kw` | `CR-101.main_motor.current_a` | 0,69 / 145 | 0,58 → 0,88 | 152 / 0–250 |
-| `RM-201.main_motor.power_kw` | `RM-201.main_motor.current_a` | 3,30 / 320 | 0,62 → 0,88 | 1.418 / 0–2.200 |
-| `KL-301.kiln_drive.power_kw` | `KL-301.kiln_drive.current_a` | 0,69 / 240 | 0,60 → 0,88 | 206 / 0–400 |
-| `CF-301.fan_drive.power_kw` | `CF-301.fan_drive.current_a` | 3,30 / 350 | 0,58 → 0,92 | 1.561 / 0–2.800 |
-| `FN-201.fan_drive.power_kw` | `FN-201.fan_drive.current_a` | 0,69 / 115 | 0,58 → 0,92 | 105 / 0–220 |
-| `RC-101.scraper_chain.power_kw` | `RC-101.scraper_chain.current_a` | 0,40 / 75 | 0,55 → 0,86 | 45 / 0–85 |
+| `CR-101.main_motor.power_kw` | `CR-101.main_motor.current_a` | 0,69 / 145 | 0,58 → 0,88 | 152,5 / 0–250 |
+| `RM-201.main_motor.power_kw` | `RM-201.main_motor.current_a` | 3,30 / 320 | 0,62 → 0,88 | 1.418,3 / 0–2.200 |
+| `KL-301.kiln_drive.power_kw` | `KL-301.kiln_drive.current_a` | 0,69 / 240 | 0,60 → 0,88 | 205,6 / 0–400 |
+| `CF-301.fan_drive.power_kw` | `CF-301.fan_drive.current_a` | 3,30 / 350 | 0,58 → 0,92 | 1.561,3 / 0–2.800 |
+| `FN-201.fan_drive.power_kw` | `FN-201.fan_drive.current_a` | 0,69 / 115 | 0,58 → 0,92 | 104,7 / 0–220 |
+| `RC-101.scraper_chain.power_kw` | `RC-101.scraper_chain.current_a` | 0,40 / 75 | 0,55 → 0,86 | 44,4 / 0–60 |
 
-Dòng định mức KL-301 và CF-301 trong bảng là giá trị đề xuất mới, cần xác nhận riêng. Quạt cooler CL-301 có airflow nhưng chưa có dòng drive hoặc cấu hình theo từng motor. Hoãn kW CL-301 đến khi có nguồn dòng phù hợp. Khi duyệt triển khai, kiểm tra kW tăng theo tải, về 0 khi dòng vật lý về 0, có hai RNG A/kW độc lập và giữ vân tay solver.
+CR-101 tính normal từ tag dòng 145 A. Dòng vật lý baseline bước 60 s có trung vị 143,70 A sau 10 phút, gần mốc này. RC-101 dùng normal dòng 74,6 A theo trung vị baseline 74,62 A, tương ứng 44,4 kW, dưới công suất điện 44,7 kW tại định mức. Điểm 85% dòng định mức tương ứng khoảng 35,9 kW. Điện áp, tải và công suất truyền động KL-301 đánh dấu `assumed`. CF-301 giữ H 390 A đã có, cao hơn 385 A là 110% của định mức giả định 350 A. Việc thêm chỉ thị kW giữ hành vi cảnh báo đã duyệt, chờ hiệu chỉnh bằng dữ liệu nhà máy. Quạt cooler CL-301 chờ nguồn dòng theo từng motor.
 
 | Equipment | A — Giữ | B — Hiệu chỉnh/định vị | C — Nội bộ | D — Bổ sung |
 |---|---|---|---|---|

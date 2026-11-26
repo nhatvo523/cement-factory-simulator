@@ -34,7 +34,7 @@ class RawPreparationScadaTest(unittest.TestCase):
 
     def test_z01_catalog_counts_and_temperature_and_vibration_thresholds(self):
         zone = [tag for tag in self.tags.values() if tag["device_id"].endswith(("-101", "-201"))]
-        self.assertEqual(sum(not tag.get("channel") for tag in zone), 69)
+        self.assertEqual(sum(not tag.get("channel") for tag in zone), 73)
         self.assertEqual(sum(tag.get("channel") == "alarm" for tag in zone), 47)
         for point, alarm in (("inlet", 400), ("outlet", 120)):
             tag = self.tags[f"RM-201.gas_{point}_temperature_c.alarm_H"]
