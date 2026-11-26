@@ -61,6 +61,8 @@ py -3 -m unittest discover -s tests -v
 - Explorer hiển thị số đo và cảnh báo mô phỏng theo thời gian thực, hỗ trợ chèn lỗi và quan sát sự cố lan giữa các thiết bị.
 - Có thể xuất kết quả kịch bản dưới dạng JSON để phân tích hoặc thử tích hợp.
 
+Tham khảo quy trình sản xuất xi măng Portland trong [EPA AP-42, mục 11.6 (PDF)](https://www.epa.gov/system/files/documents/2025-02/c11s06_final_2-2025_0.pdf).
+
 ## Phạm vi mô hình
 
 - Mô phỏng dây chuyền xi măng Portland **phương pháp khô**, từ tiếp nhận nguyên liệu, nghiền sấy và nung clinker đến nghiền xi măng, đóng bao và xuất rời.
