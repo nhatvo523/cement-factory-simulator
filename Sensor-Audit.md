@@ -155,6 +155,12 @@ WFA-F02 và WFB-F02 mới được mô tả trong đặc tả. Solver đang dùn
 
 ## Z04 — Đóng bao và xuất hàng
 
+### Rà soát mức kho trong baseline 2 giờ
+
+[Chuỗi mức 120 mẫu](Silo-Level-Baseline.csv) dùng bước 60 s, có conditioning và tắt nhiễu đầu đo. Trong 30 phút cuối, ST-101 dao động 13,6–14,0%, trung vị 13,7%. L 15% đang bật ở cả 120 mẫu và áp dụng mọi chế độ. Đây là vùng quan sát sau 2 giờ, chưa chứng minh điểm cân bằng dài hạn. Trung vị các tag còn lại là BN-101 24,4%, SL-301 62,3%, SL-302 15,4%, SL-401 A 31,65% và B 33,9%.
+
+Đề xuất `normal_kind: state_dependent` cho cả sáu tag mức, chờ duyệt cùng mục tiêu tồn theo chế độ. Catalog đã bổ sung normal cho 37 analog còn lại. Lượt metadata giữ nguyên các luật cảnh báo vì chưa xác nhận được permissive độc lập cho các đề xuất L ở bảng khảo sát. Cảnh báo L gió ba PC-301 dùng nguồn nhiên liệu PC-301 trong lượt bổ sung kênh riêng.
+
 | Equipment | A — Giữ | B — Hiệu chỉnh/định vị | C — Nội bộ | D — Bổ sung |
 |---|---|---|---|---|
 | SL-401 | — | Mức tổng hiện là khối lượng/tổng sức chứa, chưa tương đương radar. Nếu là silo nhiều ngăn vật lý, một radar chỉ đo một vị trí. Đề xuất dùng mức radar theo vị trí hoặc cảm biến mức tổng theo giả định hình học đã duyệt. Lưu lượng vào/ra chỉ giữ khi có cân | `grades`, tồn tổng tấn, mức suy từ tồn logic, lưu lượng chưa đo | H/L, mức tại vị trí đo thực, feedback cửa xả |
