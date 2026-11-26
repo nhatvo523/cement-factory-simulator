@@ -1526,6 +1526,14 @@ Draft FN-201 có thành phần cục bộ theo bình phương lưu lượng qu�
 
 Nhiệt khí ra RM-201 dùng chỉ thị giả định quanh 95 °C và cảnh báo L/H 75/120 °C. H khí vào là 400 °C. Nhiệt cuộn dây và ổ trục H/HH hoạt động mọi chế độ với debounce 15/25 s. Các cảnh báo dòng, rung, dầu, thủy lực và ΔP dùng debounce 5/8 s và được che khi dừng hoặc khởi động. Đối với phép đo có thẻ chất lượng, BAD che cảnh báo quá trình liên kết và phát cảnh báo lỗi đầu đo riêng. Các mức cảnh báo do simulator công bố không ra lệnh trip. Danh sách ngưỡng, hệ số rung và điểm cần hiệu chỉnh có trong [Sensor-Audit.md](Sensor-Audit.md).
 
+### Z03 — Lượt 1, công bố số đo và kịch bản phân ly
+
+Cả hai tuyến WF/CM/SP/FN-401 công bố dòng truyền động. CM và FN thêm kW điện ước tính theo điện áp giả định, dòng thực trước nhiễu và cosφ nội suy theo tỷ lệ dòng trên định mức. RNG nhiễu của A và kW tách theo tag. Nhiệt khí ra CM phụ thuộc công suất, gió và mòn. Nhiệt còn quán tính khi dừng. Áp dầu CM mô phỏng dốc lên/xuống theo trạng thái chạy và trôi nhẹ theo nhiệt ổ trục. Các phép suy ra chạy ở lớp công bố, không can thiệp dòng vật liệu hoặc trip solver. Công thức, lịch Blaine, che cảnh báo và giả định ghi trong [Sensor-Audit.md](Sensor-Audit.md).
+
+Blaine của sản phẩm sau SP-401A/B chỉ công bố trong kênh lab theo thời điểm lấy mẫu và trả kết quả. Kịch bản `underspeed` làm giảm tốc rotor và giảm Blaine theo proxy. Kịch bản `efficiency_loss` giảm tỷ lệ sản phẩm mịn khả dụng và tăng hồi lưu, giữ tốc độ rotor và Blaine kỳ vọng của mác. Lưu lượng phối liệu theo thành phần, phun nước, kWh/t, tải mill và tải tuần hoàn giữ nội bộ.
+
+Hai kịch bản mới `cement_separator_a_efficiency_loss` và `cement_separator_b_efficiency_loss` giảm `fines_fraction` lần lượt từ 0,58 xuống 0,50 và 0,56 xuống 0,48 qua tám bước một phút. Lịch live dùng `offset_s` tính từ bước đầu áp inject. Khi không khai báo offset, sự kiện live áp ở bước kế tiếp. Hai ca lưu vân tay vật liệu riêng và không thay thế fixture 65 kịch bản cũ.
+
 ## 4. Trạng thái triển khai
 
 Tài liệu là **đặc tả mô phỏng**, chưa phải bằng chứng hệ thống simulation đã chạy. Engineering Explorer HTML là công cụ duyệt kiến trúc; dữ liệu mô phỏng, phương trình đã hiệu chỉnh, điều khiển thời gian thực và kiểm thử end-to-end là các phần cần triển khai/kiểm chứng riêng.

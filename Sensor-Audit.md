@@ -83,6 +83,28 @@ Ngưỡng **240 °C cũ** gắn vào `RM-201.gas_outlet_temperature_c`. Giữ L 
 
 Hiệu chỉnh sau gồm đường nền rung, ngưỡng cuộn dây CR-101, quan hệ chiều cao radar–thể tích của BN-101 và các ô SL-401 (phần trụ và phần côn), mốc nhiệt ra RM-201 và hệ số ghép draft qua damper. Chưa mô tả elevator trong RM-201. Hoãn vị trí ST-101 và ngưỡng cảnh báo áp suất cửa hút FN-201.
 
+## Z03 — Lượt 1
+
+Z03 có **62 tag vận hành, 60 cảnh báo và 2 tag lab**. Thêm 24 tag vận hành cho WF, CM, SP và FN của hai tuyến A/B. Các giá trị suy ra, dải đo và ngưỡng đánh dấu `assumed`. Các zone khác không đổi danh mục. Dòng định mức SP-401A/B giả định **40 A**, normal 30 A và H 42 A, tương ứng 105% định mức.
+
+| Nhóm | Nguồn / giả định |
+|---|---|
+| Dòng và công suất | Dòng lấy từ tải vật lý và phản hồi truyền động. CM tính thêm ảnh hưởng hồi lưu trong chỉ thị tải. Công suất điện ước tính theo `sqrt(3) × V_kV × I_A × cosφ`. `cosφ = cosφ_idle + clamp(I/I_định_mức, 0, 1) × (cosφ_rated − cosφ_idle)`. CM dùng 3,3 kV, 165 A và cosφ 0,62–0,88. FN dùng 0,69 kV, 175 A và 0,58–0,92. Công thức dùng dòng trước nhiễu đầu đo. Tag A và kW có RNG riêng theo mã tag. |
+| Khí ra CM | Khi đang nghiền, nhiệt mục tiêu `95 + 12(P/760 − 1) + 80(1 − G/G_ref) + 34w` °C với P là kW, G là gió thực, G_ref là 55/53 m³/s cho A/B và w là mức mòn 0–1. Lượng liệu tác động qua công suất. Mục tiêu về 25 °C khi dừng, quán tính mô hình 180 s và quán tính đầu đo 20 s. |
+| Dầu CM | Mục tiêu khi chạy là `3 − 0,003(T_ổ − 62)` bar, khi dừng là 0 bar. Hằng số lên áp 12 s và xuống áp 20 s. Đây là giả định chỉ thị, không có thêm kịch bản lỗi dầu. |
+| Blaine lab | `B = clamp(B_mác + 120(n/880 − 1) + ε, 200, 600)` m²/kg. B_mác là 350 cho A và 380 cho B. ε là nhiễu Gaussian σ = 2 m²/kg, có seed riêng theo tag và thời điểm lấy mẫu. Công thức là proxy của simulator. Mặc định tự động lấy mẫu/trả sau 10/5 phút, tùy chọn thủ công 60/30 phút qua `blaine_lab.analysis_type`. Lấy mẫu khi sản phẩm mịn có lưu lượng. |
+
+| Kịch bản | Hướng Blaine theo công thức |
+|---|---|
+| Baseline | Quanh mốc của từng mác. |
+| `underspeed` | Rotor 880 → 660 rpm làm kết quả giảm khoảng 30 m²/kg so với mẫu cùng thời điểm và seed. |
+| `efficiency_loss` | `fines_fraction` giảm, hồi lưu tăng và tốc độ rotor giữ nguyên. Kỳ vọng Blaine gần như giữ nguyên ở cùng mác. |
+| Trip | Bỏ kỳ lấy mẫu nếu không có sản phẩm mịn. Mẫu đã lấy vẫn trả đúng lịch. |
+
+Nhiệt cao H/HH vẫn được đánh giá khi dừng. Dòng, kW, rung, tốc độ phân ly, áp dầu và cảnh báo thấp nhiệt hoặc áp quá trình dùng chế độ RUNNING qua giai đoạn khởi động. Nhiệt debounce 15/25 s, các phép đo khác 5/8 s. BAD che cảnh báo quá trình của phép đo cùng đầu đo theo cơ chế chung. Z03 có hai cảnh báo BAD riêng của load cell WF, không che dòng motor WF vì khác nguồn.
+
+WFA-F02 và WFB-F02 mới được mô tả trong đặc tả. Solver đang dùng tỷ lệ thạch cao/phụ gia cố định theo recipe, chưa có sai lệch dòng thạch cao độc lập. Chưa thêm tag thành phần. Phương án chờ duyệt là tạo sai lệch định lượng có khối lượng truy vết cho từng dòng và kiểm chứng rồi mới công bố ba tag cân thành phần mỗi tuyến.
+
 ## Bề mặt dữ liệu trước Bước 1
 
 | Bề mặt | Dữ liệu hiện có |
