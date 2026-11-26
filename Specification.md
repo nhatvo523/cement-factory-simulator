@@ -1538,6 +1538,8 @@ Hai kịch bản mới `cement_separator_a_efficiency_loss` và `cement_separato
 
 ## 4. Trạng thái triển khai
 
+PC-301 bổ sung áp gauge cửa ra, ΔP buồng và lưu lượng gió ba dưới dạng tín hiệu thụ động. Áp gauge suy theo draft CF-301, ΔP theo bình phương lưu lượng CF-301, gió ba theo tích tỷ lệ lưu lượng quạt cooler và ID fan. Các hệ số và ngưỡng đều giả định. H/HH áp dụng theo quạt hút đã ổn định. L/LL gió ba chỉ đánh giá khi lưu lượng nhiên liệu vật lý PC-301 dương. Damper PC-301 chờ nguồn phản hồi độc lập.
+
 ### Chưa làm trong bản này
 
 - WFA-F02/WFB-F02 và các tag lưu lượng thành phần theo từng tuyến. Mô hình hiện dùng tỷ lệ phối liệu cố định.

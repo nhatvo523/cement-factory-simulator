@@ -49,6 +49,18 @@ class KilnScadaTest(unittest.TestCase):
         self.assertAlmostEqual(reading(after, "PH-301", temperature), target + (initial - target) * math.exp(-60 / 180))
         self.assertGreater(reading(after, "PH-301", temperature), reading(later, "PH-301", temperature))
 
+    def test_calciner_pressure_and_air_follow_draft(self):
+        fields = ("calciner_outlet.gauge_pressure_pa", "chamber.differential_pressure_pa", "tertiary_air.flow_m3_s")
+        normal = [reading(self.frames("baseline")[9], "PC-301", field) for field in fields]
+        derated = [reading(self.frames("kiln_id_fan_derate")[10], "PC-301", field) for field in fields]
+        self.assertEqual(normal, [-1200, 650, 35])
+        self.assertGreater(derated[0], normal[0])
+        self.assertLess(derated[1], normal[1])
+        self.assertLess(derated[2], normal[2])
+        handler = ExplorerHandler.__new__(ExplorerHandler)
+        tripped = handler.simulation("kiln_id_fan_trip")["frames"][10]
+        self.assertFalse(tripped["alarms"]["PC-301"]["PC-301.tertiary_air.flow_m3_s.alarm_L"])
+
     def test_drive_current_and_cooler_temperature_follow_load(self):
         before, loaded = self.frames("kiln_id_fan_derate")[9:11]
         self.assertLess(reading(loaded, "KL-301", "kiln_drive.current_a"),
