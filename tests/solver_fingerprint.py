@@ -4,6 +4,12 @@ import hashlib
 import json
 
 
+def release_stockpile_assets(assets):
+    """Use the release initial stock for fixture replay without mutating the plant defaults."""
+    stockpile = assets["stockpile"]
+    return {**assets, "stockpile": {**stockpile, "parameters": {**stockpile["parameters"], "initial_t": 35}}}
+
+
 MATERIAL_FIELDS = {
     "inlet_tph", "outlet_tph", "fresh_inlet_tph", "recycle_tph", "inventory_t", "grades",
     "evaporated_water_tph", "process_co2_tph", "operating_state", "trip_reason",

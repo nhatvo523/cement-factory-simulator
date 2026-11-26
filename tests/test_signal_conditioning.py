@@ -9,7 +9,7 @@ from factory_sim.core.engine import simulate
 from factory_sim.core.signal_conditioning import alarm_value, conditioned_value
 from factory_sim.core.telemetry import load_tag_config, public_frames
 from factory_sim.server import CONFIGS, SCENARIOS
-from solver_fingerprint import solver_fingerprints
+from solver_fingerprint import release_stockpile_assets, solver_fingerprints
 
 
 class SignalConditioningTest(unittest.TestCase):
@@ -46,9 +46,11 @@ class SignalConditioningTest(unittest.TestCase):
     def test_solver_material_and_thermal_fingerprints_and_bypass_gate_for_65_cases(self):
         expected = read_json(Path(__file__).with_name("phase_b_solver_fingerprints.json"))
         self.assertEqual(set(expected), set(SCENARIOS))
+        assets = release_stockpile_assets(self.assets)
         for name in SCENARIOS:
             with self.subTest(scenario=name):
-                frames = self.solve(name)
+                scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", assets)
+                frames = list(simulate(self.plant, assets, scenario))
                 self.assertEqual(solver_fingerprints(frames), expected[name])
                 for frame in frames:
                     eq = frame["equipment"]
@@ -69,6 +71,33 @@ class SignalConditioningTest(unittest.TestCase):
         for frame in expected:
             self.assertNotIn("alarms", frame)
             self.assertNotIn("SL-301.level_high_switch", frame["measurements"]["SL-301"])
+
+    def test_stockpile_startup_margin_and_state_dependent_levels(self):
+        stockpile = self.assets["stockpile"]["parameters"]
+        self.assertEqual((stockpile["initial_t"], stockpile["capacity_t"]), (48, 240))
+        tag_id = "ST-101.level_sensor.measured_level_fraction"
+        tag = self.tags[tag_id]
+        self.assertEqual(tag["startup_reference_pct"], 20)
+        level_tags = {t["tag_id"] for t in self.tags.values() if t.get("normal_kind") == "state_dependent"}
+        self.assertEqual(level_tags, {
+            tag_id, "BN-101.level_sensor.measured_level_fraction", "SL-301.level_sensor.measured_level_fraction",
+            "SL-302.level_sensor.measured_level_fraction", "SL-401.cell_A.measured_level_fraction",
+            "SL-401.cell_B.measured_level_fraction",
+        })
+        low = self.tags[tag_id + ".alarm_L"]["rule"]
+        self.assertEqual(low["by_mode"]["ALL"], 15)
+        self.assertEqual(self.tags[tag_id + ".alarm_LL"]["rule"]["by_mode"]["ALL"], 8)
+        scenario = load_scenario(CONFIGS / "scenarios/baseline.json", self.assets)
+        scenario["duration_s"] = 600
+        amplitude = scenario["profile"]["measurements"]["stockpile"]["level_fraction"]["relative_amplitude"]
+        cfg = tag["conditioning"]
+        margin_used = (20 * amplitude + cfg["noise_pct_of_span"] * (cfg["range_max"] - cfg["range_min"]) / 100
+                       + cfg["resolution"] / 2 + low["deadband"])
+        self.assertLess(margin_used, 20 - low["by_mode"]["ALL"])
+        plant = {**self.plant, "step_s": 1}
+        for assets, expected_alarm in ((self.assets, False), (release_stockpile_assets(self.assets), True)):
+            published = self.project(simulate(plant, assets, scenario), plant=plant)
+            self.assertTrue(all(self.reading(f, tag_id + ".alarm_L", "alarms") == expected_alarm for f in published[5:]))
 
     def test_first_order_and_saturation_quantization_transport_and_sampling(self):
         for tag_id in ("PH-301.cyclone_1.gas_temperature_c", "PH-301.cyclone_1.gauge_pressure_pa"):

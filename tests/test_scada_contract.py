@@ -13,6 +13,7 @@ from factory_sim.core.config import load_plant, load_scenario, read_json
 from factory_sim.core.engine import simulate
 from factory_sim.core.telemetry import load_tag_config
 from factory_sim.server import CONFIGS, ROOT, SCENARIOS, ExplorerHandler
+from solver_fingerprint import release_stockpile_assets
 
 
 class ScadaContractTest(unittest.TestCase):
@@ -109,10 +110,11 @@ class ScadaContractTest(unittest.TestCase):
         self.assertEqual(set(expected), set(SCENARIOS))
         self.assertEqual(len(expected), 65)
         legacy_plant = {**self.plant, "thermal_coupling": {**self.plant["thermal_coupling"], "enabled": False}}
+        assets = release_stockpile_assets(self.assets)
         for name in SCENARIOS:
             with self.subTest(scenario=name):
-                scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", self.assets)
+                scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", assets)
                 physical = [{key: frame[key] for key in ("time_s", "equipment", "balance", "events")}
-                            for frame in simulate(legacy_plant, self.assets, scenario)]
+                            for frame in simulate(legacy_plant, assets, scenario)]
                 encoded = json.dumps(physical, sort_keys=True, separators=(",", ":")).encode()
                 self.assertEqual(hashlib.sha256(encoded).hexdigest(), expected[name])

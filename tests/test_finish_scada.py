@@ -9,7 +9,7 @@ from factory_sim.core.signal_conditioning import conditioned_value
 from factory_sim.core.telemetry import electrical_power, load_tag_config, public_frames
 from factory_sim.server import (AVAILABLE_SCENARIOS, CONFIGS, EFFICIENCY_SCENARIOS,
                                 ExplorerHandler, LiveOperation, SCENARIOS)
-from solver_fingerprint import solver_fingerprints
+from solver_fingerprint import release_stockpile_assets, solver_fingerprints
 
 
 class FinishScadaTest(unittest.TestCase):
@@ -51,12 +51,14 @@ class FinishScadaTest(unittest.TestCase):
         self.assertEqual(len(set(legacy_and_efficiency)), 67)
         self.assertTrue(set(legacy_and_efficiency) <= set(AVAILABLE_SCENARIOS))
         hashes = read_json(Path(__file__).with_name("z03_efficiency_loss_fingerprints.json"))
+        assets = release_stockpile_assets(self.assets)
         self.assertFalse(set(SCENARIOS) & hashes.keys())
         api = ExplorerHandler.__new__(ExplorerHandler)
         for side, name in zip("AB", EFFICIENCY_SCENARIOS, strict=True):
             with self.subTest(side=side):
                 raw = self.raw(name)
-                self.assertEqual(solver_fingerprints(raw), hashes[name])
+                scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", assets)
+                self.assertEqual(solver_fingerprints(simulate(self.plant, assets, scenario)), hashes[name])
                 ramp = raw[10:19]
                 separator = f"SP-401{side}"
                 measured = self.project(raw, noise_enabled=False)[10:19]

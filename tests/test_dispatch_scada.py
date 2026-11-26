@@ -7,7 +7,7 @@ from factory_sim.core.config import load_plant, load_scenario, read_json
 from factory_sim.core.engine import simulate
 from factory_sim.core.telemetry import load_tag_config, public_frames
 from factory_sim.server import AVAILABLE_SCENARIOS, CONFIGS, DISPATCH_SCENARIOS, EFFICIENCY_SCENARIOS, SCENARIOS, LiveOperation
-from solver_fingerprint import solver_fingerprints
+from solver_fingerprint import release_stockpile_assets, solver_fingerprints
 
 
 class DispatchScadaTest(unittest.TestCase):
@@ -34,7 +34,9 @@ class DispatchScadaTest(unittest.TestCase):
         self.assertNotIn(name, SCENARIOS + EFFICIENCY_SCENARIOS)
         raw = self.raw(name)
         fixture = read_json(Path(__file__).with_name("z04_dispatch_fingerprints.json"))
-        self.assertEqual(solver_fingerprints(raw), fixture[name])
+        assets = release_stockpile_assets(self.assets)
+        scenario = load_scenario(CONFIGS / "scenarios" / f"{name}.json", assets)
+        self.assertEqual(solver_fingerprints(simulate(self.plant, assets, scenario)), fixture[name])
         frames = self.project(raw, noise_enabled=False)
         phases = frames[10:14]
         flows = [row["equipment"]["BC-501"]["outlet_tph"] for row in raw[10:14]]

@@ -110,7 +110,7 @@
       "model_type": "stockpile_v1",
       "parameters": {
         "capacity_t": 240,
-        "initial_t": 35,
+        "initial_t": 48,
         "high_level_interlock": 1,
         "initial_moisture_fraction": 0.05
       }
