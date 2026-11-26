@@ -1536,7 +1536,15 @@ Cả hai tuyến WF/CM/SP/FN-401 công bố dòng truyền động. CM và FN th
 
 Blaine của sản phẩm sau SP-401A/B chỉ công bố trong kênh lab theo thời điểm lấy mẫu và trả kết quả. Kịch bản `underspeed` làm giảm tốc rotor và giảm Blaine theo proxy. Kịch bản `efficiency_loss` giảm tỷ lệ sản phẩm mịn khả dụng và tăng hồi lưu, giữ tốc độ rotor và Blaine kỳ vọng của mác. Lưu lượng phối liệu theo thành phần, phun nước, kWh/t, tải mill và tải tuần hoàn giữ nội bộ.
 
-Hai kịch bản mới `cement_separator_a_efficiency_loss` và `cement_separator_b_efficiency_loss` giảm `fines_fraction` lần lượt từ 0,58 xuống 0,50 và 0,56 xuống 0,48 qua tám bước một phút. Lịch live dùng `offset_s` tính từ bước đầu áp inject. Khi không khai báo offset, sự kiện live áp ở bước kế tiếp. Bộ kịch bản hiện có **67 ca** gồm 65 ca cũ (kể cả baseline) và hai ca mới. Bộ 65 ca cũ dùng fixture vân tay vật liệu và nhiệt/chất lượng. Hai ca mới có fixture vân tay vật liệu riêng.
+Hai kịch bản `cement_separator_a_efficiency_loss` và `cement_separator_b_efficiency_loss` giảm `fines_fraction` lần lượt từ 0,58 xuống 0,50 và 0,56 xuống 0,48 qua tám bước một phút. Lịch live dùng `offset_s` tính từ bước đầu áp inject. Khi không khai báo offset, sự kiện live áp ở bước kế tiếp. Bộ hồi quy 67 ca gồm 65 ca ban đầu (kể cả baseline) và hai ca phân ly. Cả 67 ca dùng fixture vân tay vật liệu và nhiệt/chất lượng. Sau khi thêm một ca Z04, tổng số kịch bản đăng ký là **68**.
+
+### Z04 — Lượt 1, số đo đóng bao và trượt băng
+
+PK-501 công bố trong `measurements` khối lượng của bao hoàn tất gần nhất. Mỗi bao lấy mẫu riêng tại 50 kg cộng nhiễu Gaussian giả định σ 0,12 kg, độ phân giải 0,01 kg. Khi một frame chứa nhiều bao, giá trị công bố là mẫu cuối, còn cảnh báo L/H 49,5/50,5 kg xét trung bình trượt 10 bao và chỉ đánh giá khi packer chạy ổn định. Giao diện thấy bit lỗi chung của packer. Chi tiết sự kiện vẫn thuộc kênh chẩn đoán.
+
+BC-501 công bố tốc độ thực của băng và proxy tốc độ pulley chủ động. Sau khởi động, cảnh báo trượt dùng tỷ số tốc độ băng/pulley dưới 0,85 và deadband 0,02. Dòng, rung và nhiệt ổ trục suy theo tải và trượt. Bộ đếm cuối băng dịch từng xung bao 20 s giả định trong phép công bố. Bộ đếm điểm xếp LD-501 suy từ lưu lượng đã giao. Do chưa có buffer vật lý, hai bộ đếm có thể lệch trong cửa sổ trễ và không dùng để đối soát giao hàng.
+
+`bc501_belt_slip_ramp` dùng một phút đầu ở trạng thái không trượt, sau đó tăng mức trượt 0,10, 0,20, 0,30 cách nhau 60 s. Năng lực băng giảm theo fault `belt.slip` hiện có. Ca này có fixture hai vân tay riêng. Các cảnh báo nhiệt H/HH vẫn hiệu lực khi dừng, còn dòng và rung áp dụng sau khởi động. Chất lượng BAD của cân và radar SL-401 có cảnh báo đầu đo riêng. Tag và alarm mới nằm trong allowlist catalog hiện có.
 
 ## 4. Trạng thái triển khai
 
@@ -1545,9 +1553,9 @@ PC-301 bổ sung áp gauge cửa ra, ΔP buồng và lưu lượng gió ba dư�
 ### Chưa làm trong bản này
 
 - WFA-F02/WFB-F02 và các tag lưu lượng thành phần theo từng tuyến. Mô hình hiện dùng tỷ lệ phối liệu cố định.
-- Hoàn thiện metadata giá trị bình thường. Danh mục phát hành có 77/120 tag analog có `normal`, còn thiếu 43 tag.
+- Xác nhận metadata `normal_kind: state_dependent` hoặc mục tiêu vận hành theo chế độ cho sáu tag mức kho còn mở.
 - Độ trễ vận chuyển xuyên zone.
-- Hoàn thiện bộ kênh đo của PC-301.
-- Test cân bằng mức SL-302 và từng ô vật lý của SL-401.
-- Mở rộng bộ tín hiệu và cảnh báo Z04 theo phạm vi nghiệm thu của các zone trước.
+- Phản hồi damper PC-301.
+- Phản hồi vị trí và hút bụi SP-502, gross/tare WS-502, buffer bao, loại bao theo cân và kW Z04.
+- Bảo vệ trip ổ trục CM-401A/B và điều chỉnh severity trên giao diện/API.
 - Hiệu chỉnh tham số và ngưỡng cảnh báo theo dữ liệu historian.

@@ -2,7 +2,7 @@
 
 from collections import deque
 from hashlib import sha256
-from math import expm1, prod, sqrt
+from math import expm1, fsum, prod, sqrt
 from pathlib import Path
 from random import Random
 
@@ -25,6 +25,8 @@ def load_tag_config(model_directory, assets, plant=None, conditioning_enabled=No
             raise ValueError(f"Circular SCADA source reference: {tag_id}")
         source = tag["source"]
         dependencies = {source["asset"]}
+        if mass_asset := source.get("bag_mass_asset"):
+            dependencies.add(mass_asset)
         if permissive := tag.get("rule", {}).get("permissive"):
             dependencies.add(permissive["asset"])
         for term in source.get("passive_model", {}).get("terms", []):
@@ -153,6 +155,19 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
     quality_tags = {tag["tag_id"]: tag["quality_tag"] for tag in tags if "quality_tag" in tag}
     bag_tags = [tag for tag in tags if tag["source"].get("transform") == "bags_count"]
     bag_source = bag_tags[0]["source"] if bag_tags else None
+    bag_transforms = {tag["source"].get("transform"): tag for tag in tags}
+    checkweigher = bag_transforms.get("bag_weight")
+    delayed_bags = bag_transforms.get("delayed_bag_count")
+    loading_counter = bag_transforms.get("loaded_bag_count")
+    belt_arrivals = deque()
+    belt_count = loading_count = 0
+    loading_remainder = 0.0
+    bag_weight = bag_average = None
+    if checkweigher:
+        sample_cfg = checkweigher["sample_model"]
+        recent_weights = deque(maxlen=sample_cfg["average_bags"])
+        seed = sha256(f"{settings.get('seed', 0)}:{checkweigher['tag_id']}".encode()).digest()
+        bag_rng = Random(seed)
     compartments = {entry["grade"]: entry for entry in
                     plant.get("cement_dispatch", {}).get("compartments", {}).values()}
     for frame in frames:
@@ -162,6 +177,8 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
             bag_asset = bag_source["asset"]
             bag_mass = assets[bag_asset]["parameters"]["bag_mass_kg"]
             flow = frame["equipment"][bag_asset][bag_source["field"]]
+            rate = flow * 1000 / (3600 * bag_mass)
+            opening_remainder = bag_remainder
             bag_remainder += flow * step_s * 1000 / (3600 * bag_mass)
             completed = int(bag_remainder)
             bag_remainder -= completed
@@ -169,6 +186,30 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
             bag_history.append((time_s, bag_count))
             while len(bag_history) > 1 and bag_history[1][0] <= time_s - 60:
                 bag_history.popleft()
+            if checkweigher and completed:
+                low, high = checkweigher["range"]
+                resolution = sample_cfg["resolution_kg"]
+                for _ in range(completed):
+                    noise = bag_rng.gauss(0, sample_cfg["noise_sigma_kg"]) if enabled and settings["noise_enabled"] else 0
+                    bag_weight = max(low, min(high, round((bag_mass + noise) / resolution) * resolution))
+                    recent_weights.append(bag_weight)
+                if len(recent_weights) == recent_weights.maxlen:
+                    bag_average = fsum(recent_weights) / len(recent_weights)
+            if delayed_bags:
+                delay = delayed_bags["conditioning"]["transport_delay_s"] if enabled else 0
+                for number in range(1, completed + 1):
+                    completed_at = min(time_s, previous_time + (number - opening_remainder) / rate)
+                    belt_arrivals.append(completed_at + delay)
+                while belt_arrivals and belt_arrivals[0] <= time_s:
+                    belt_arrivals.popleft()
+                    belt_count += 1
+        if loading_counter:
+            source = loading_counter["source"]
+            mass = assets[source["bag_mass_asset"]]["parameters"]["bag_mass_kg"]
+            loading_remainder += (read_source(frame, source) or 0) * step_s * 1000 / (3600 * mass)
+            completed = int(loading_remainder)
+            loading_count += completed
+            loading_remainder -= completed
         previous_time = time_s
         readings = {}
         lab = {}
@@ -213,6 +254,12 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
                 value = bag_count
             elif transform == "bags_per_min":
                 value = bag_count - bag_history[0][1]
+            elif transform == "bag_weight":
+                value = bag_weight
+            elif transform == "delayed_bag_count":
+                value = belt_count
+            elif transform == "loaded_bag_count":
+                value = loading_count
             elif value is not None:
                 if transform == "run":
                     value = value == "RUNNING"
@@ -240,7 +287,7 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
                 weight = -expm1(-step_s / tau)
                 value = previous + weight * (value - previous)
                 thermal_state[tag_id] = value
-            if enabled and "conditioning" in tag:
+            if enabled and "conditioning" in tag and tag["conditioning"]["kind"] != "counter":
                 value = conditioned_value(value, tag, instrument_state.setdefault(tag["tag_id"], {}),
                                           time_s, step_s, settings["seed"], settings["noise_enabled"])
             readings.setdefault(tag["device_id"], {})[tag["tag_id"]] = value
@@ -270,6 +317,11 @@ def public_frames(frames, tags, plant, assets, ground_truth=False, signal_condit
                 device_readings = readings[device]
                 input_tag = rule["input_tag"]
                 value = device_readings.get(input_tag)
+                if rule.get("use_bag_average"):
+                    value = bag_average
+                if reference := rule.get("reference_tag"):
+                    reference_value = device_readings.get(reference)
+                    value = value / reference_value if value is not None and reference_value else None
                 if (quality := quality_tags.get(input_tag)) and device_readings.get(quality) == "BAD":
                     value = None
                 if (permissive := rule.get("permissive")) and (read_source(frame, permissive) or 0) <= 0:

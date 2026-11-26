@@ -47,8 +47,9 @@ class FinishScadaTest(unittest.TestCase):
 
     def test_efficiency_ramps_have_separate_fingerprints_and_coordinated_readings(self):
         self.assertEqual(len(SCENARIOS), 65)
-        self.assertEqual(len(AVAILABLE_SCENARIOS), 67)
-        self.assertEqual(len(set(AVAILABLE_SCENARIOS)), 67)
+        legacy_and_efficiency = SCENARIOS + EFFICIENCY_SCENARIOS
+        self.assertEqual(len(set(legacy_and_efficiency)), 67)
+        self.assertTrue(set(legacy_and_efficiency) <= set(AVAILABLE_SCENARIOS))
         hashes = read_json(Path(__file__).with_name("z03_efficiency_loss_fingerprints.json"))
         self.assertFalse(set(SCENARIOS) & hashes.keys())
         api = ExplorerHandler.__new__(ExplorerHandler)

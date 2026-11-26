@@ -41,7 +41,8 @@ SCENARIOS = (
     "bag_loader_stop", "bulk_feeder_jam", "truck_scale_signal_loss",
 )
 EFFICIENCY_SCENARIOS = ("cement_separator_a_efficiency_loss", "cement_separator_b_efficiency_loss")
-AVAILABLE_SCENARIOS = SCENARIOS + EFFICIENCY_SCENARIOS
+DISPATCH_SCENARIOS = ("bc501_belt_slip_ramp",)
+AVAILABLE_SCENARIOS = SCENARIOS + EFFICIENCY_SCENARIOS + DISPATCH_SCENARIOS
 CONFIGS = ROOT / "configs"
 PAGES = {
     "/": ("UI/Explorer.html", "text/html; charset=utf-8"),
